@@ -1,0 +1,108 @@
+# data/courses/<course_id>/course.yaml
+course_id: cs2200
+name: "Intro to Systems"
+term: "Spring 2026"
+
+policies:
+  graded_help: hints_only
+  allow_current_homework: false
+  require_attempt_for_debugging: true
+  fail_closed_on_low_grounding: true
+
+citations:
+  formats:
+    slides: "Lecture {lecture} Slides, slide {slide}"
+    textbook: "{textbook_short}, Ch {chapter}{section}, p. {page}"
+    handout: "{doc_title}, p. {page}"
+    practice_exam: "{doc_title}, p. {page}, q. {question_number}"
+    # NEW: citation template for custom resources
+    custom: "{resource_label}: {doc_title}, p. {page}, a. {additional_info}"
+
+parsing:
+  chunking:
+    chunk_tokens: 320
+    overlap_tokens: 64
+
+  slides:
+    lecture_from_filename_regex: "(?i)(lecture|lec)[ _-]?(\\d+)"
+    chunk_tokens: 260
+    overlap_tokens: 50
+
+  textbook:
+    ocr_enabled: true
+    detect_chapters: true
+    chunk_tokens: 360
+    overlap_tokens: 70
+
+  handouts:
+    chunk_tokens: 320
+    overlap_tokens: 64
+
+  practice_exams:
+    chunk_tokens: 320
+    overlap_tokens: 64
+
+  # NEW: parsing defaults for any custom resource type (overridable per resource)
+  custom_defaults:
+    ocr_enabled: false
+    chunk_tokens: 320
+    overlap_tokens: 64
+    # Choose an ingestion adapter (pdf_text_v1, markdown_v1, html_v1, code_v1, etc.)
+    adapter: "pdf_text_v1"
+
+retrieval:
+  top_k: 12
+  use_reranker: true
+  rerank_top_n: 25
+  final_k: 6
+
+resources:
+  slides:
+    official: true
+    expected_path: "raw/slides/"
+
+  textbooks:
+    - textbook_id: clrs4e
+      official: true
+      title: "Introduction to Algorithms"
+      short: "CLRS"
+      edition: "4th"
+      expected_path: "raw/textbook/"
+      filename_hint_regex: "(?i)clrs|algorithms|cormen"
+
+  handouts:
+    official: true
+    expected_path: "raw/handouts/"
+
+  practice_exams:
+    official: true
+    expected_path: "raw/practice_exams/"
+
+  # NEW: Custom resources (arbitrary)
+  custom_resources:
+    - resource_id: piazza
+      label: "Piazza FAQ"
+      official: true
+      expected_path: "raw/custom/piazza/"
+      adapter: "markdown_v1"
+      citation_format_key: "custom"   # refers to citations.formats.custom
+      parsing_overrides:
+        chunk_tokens: 240
+        overlap_tokens: 40
+
+    - resource_id: staff_notes
+      label: "Staff Notes"
+      official: true
+      expected_path: "raw/custom/staff_notes/"
+      adapter: "pdf_text_v1"
+      citation_format_key: "custom"
+
+    - resource_id: video_transcripts
+      label: "Lecture Transcripts"
+      official: true
+      expected_path: "raw/custom/transcripts/"
+      adapter: "text_v1"
+      citation_format_key: "custom"
+      parsing_overrides:
+        chunk_tokens: 420
+        overlap_tokens: 80

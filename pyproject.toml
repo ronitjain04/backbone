@@ -1,0 +1,17 @@
+[project]
+name = "backbone"
+version = "0.1.0"
+description = "Backbone project"
+requires-python = ">=3.9"
+
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml",
+    # add any other dependencies you need
+]
+
+[tool.setuptools.packages.find]
+where = ["apps", "infra", "packages"]
+
+[tool.uv]
+# Optional: uv-specific settings

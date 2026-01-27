@@ -1,0 +1,306 @@
+course_id: cs2200
+version_id: v0001
+created_at: '2026-01-15T19:11:33.230028+00:00'
+build:
+  ingestion_pipeline: ingest_v1
+  embedding_model: BAAI/bge-small-en-v1.5
+  reranker_model: BAAI/bge-reranker-base
+  defaults:
+    chunk_tokens: 320
+    overlap_tokens: 64
+  status: pending
+  num_documents: 29
+  extra: {}
+documents:
+- doc_id: doc_textbook_cs_2200_book_pdf
+  doc_type: textbook
+  title: CS 2200 Book.pdf
+  raw_path: raw/textbook/CS 2200 Book.pdf
+  sha256: ef24e45a8215034273f51b297eafdcaa091f5a0b95f36adf59f93bd9d95cd3c0
+  ingestion:
+    adapter: pdf_text_v1
+    chunk_tokens: 360
+    overlap_tokens: 70
+    ocr_enabled: true
+    detect_chapters: true
+    extra: {}
+- doc_id: doc_slides_10_pipelining
+  doc_type: slides
+  title: 10. pipelining
+  raw_path: raw/slides/10. pipelining.pptx
+  sha256: 0dabeea5cc7342685ff8c3c4969d04c751c96870c8c55049b42e394d0cea4b2e
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_11_hazards
+  doc_type: slides
+  title: 11. hazards
+  raw_path: raw/slides/11. hazards.pptx
+  sha256: c3fe2b31ccc6a6543fb07cd69cccd3d9842744dc9b4bd10bba58be82d9ae77cd
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_12_hazards_2
+  doc_type: slides
+  title: 12. hazards-2
+  raw_path: raw/slides/12. hazards-2.pptx
+  sha256: fdf1b54ff8cf1c9ab2b88b4fb82fb02217c08931952efb4a4682f2f41a4bf335
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_13_scheduling
+  doc_type: slides
+  title: 13. scheduling
+  raw_path: raw/slides/13. scheduling.pptx
+  sha256: 08cc942cca1ff92fdaddf012d0b519889cff322ace604f66e42423465987973e
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_14_scheduling_algos
+  doc_type: slides
+  title: 14. scheduling-algos
+  raw_path: raw/slides/14. scheduling-algos.pptx
+  sha256: 05ae4dd73394b6992fcf4dc012c1b0730171fb16ace9cc0a7064c891b8a7d42a
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_15_vm_1
+  doc_type: slides
+  title: 15. VM-1
+  raw_path: raw/slides/15. VM-1.pptx
+  sha256: 5b0b2b7b6a65a33b73b9093d214424aa364ebedf5b577a3e1ac54a5c91bb0f68
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_16_vm_2
+  doc_type: slides
+  title: 16. VM-2
+  raw_path: raw/slides/16. VM-2.pptx
+  sha256: 82435f113408019f980662dcb3cd36f30b4dc57075724811cd69e0356bcc427f
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_17_exam_2_review
+  doc_type: slides
+  title: 17. Exam 2 review
+  raw_path: raw/slides/17. Exam 2 review.pptx
+  sha256: ffbf01ed05effd37a6c568f7647e183c9e04bc8783b573e81fef91970a2484fc
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_17_vm_3
+  doc_type: slides
+  title: 17. VM-3
+  raw_path: raw/slides/17. VM-3.pptx
+  sha256: da49c21f2e53bc8dd883a90aba520cfa005270eea6e4826e6c98c3b0849f2021
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_18_memory_hierarchy_1
+  doc_type: slides
+  title: 18. Memory hierarchy-1
+  raw_path: raw/slides/18. Memory hierarchy-1.pptx
+  sha256: cd5d24b8cfd235940e36ffc29442981af4b6b2f76dee307ab919172666c034a0
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_19_memory_hierarchy_2
+  doc_type: slides
+  title: 19. Memory hierarchy-2
+  raw_path: raw/slides/19. Memory hierarchy-2.pptx
+  sha256: 0cbaecead5f466b255f0c8c9a376fa64ce5ef624719bdeab00b1d29998b38490
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_20_memory_hierarchy_3
+  doc_type: slides
+  title: 20. Memory hierarchy-3
+  raw_path: raw/slides/20. Memory hierarchy-3.pptx
+  sha256: 9a5f95d352f1570d89b2bf5c7d0a4c588f66a6ad139aad23525646e265d7a712
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_21_parallel_systems_1
+  doc_type: slides
+  title: 21. Parallel systems-1
+  raw_path: raw/slides/21. Parallel systems-1.pptx
+  sha256: 96c53e320a471078b672c247ae2e0586a594c344221cedc2a29193871d931e3d
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_22_parallel_systems_2
+  doc_type: slides
+  title: 22. Parallel systems-2
+  raw_path: raw/slides/22. Parallel systems-2.pptx
+  sha256: 8803f5bb35fe47ab6d015581c5ebd511b96cc89a9927f660203e6c9c9eb34151
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_23_pio_dma
+  doc_type: slides
+  title: 23. PIO-DMA
+  raw_path: raw/slides/23. PIO-DMA.pptx
+  sha256: b86526a495c6bcfcb9a5ab205dcde93296becee9be214b96a1d443958c4f6725
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_24_networking_1
+  doc_type: slides
+  title: 24. Networking-1
+  raw_path: raw/slides/24. Networking-1.pptx
+  sha256: d307bcdd6261810eae9c3d915c49354032a85ddae8ade80539c47b475445afca
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_25_networking_2
+  doc_type: slides
+  title: 25. Networking-2
+  raw_path: raw/slides/25. Networking-2.pptx
+  sha256: e160193ded73ffe1ccce8c7299717f272cfd73f2d1ae735f97ec4ef738b10a21
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_26_networking_3
+  doc_type: slides
+  title: 26. Networking-3
+  raw_path: raw/slides/26. Networking-3.pptx
+  sha256: 61e2ac9f4fff3ce64c0c646e5e84375d9bada567dd3477218b6cc4da41e3d375
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_27_disk_scheduling
+  doc_type: slides
+  title: 27. Disk scheduling
+  raw_path: raw/slides/27. Disk scheduling.pptx
+  sha256: 07edcc546f34b0bb7e4a37ff4ba360f3ccf876f9dd07e339f0cbbc1ef9fb2306
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_28_file_systems
+  doc_type: slides
+  title: 28. File systems
+  raw_path: raw/slides/28. File systems.pptx
+  sha256: 50a8a1365f66c9fa318b42945f2680be63d643e02a27d0bd6c238ef9dbb6f2fc
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_29_file_systems_2
+  doc_type: slides
+  title: 29. File systems 2
+  raw_path: raw/slides/29. File systems 2.pptx
+  sha256: 014888e0eb98bde36ea65746b76139d9735a80febe727df1c30818ee6e9c4f6c
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_3_isa_2
+  doc_type: slides
+  title: 3. isa-2
+  raw_path: raw/slides/3. isa-2.pptx
+  sha256: 560f40b622292245322f51afb9ee879226dcfef0e9dd0bdee20c3073721445ec
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_4_isa_3
+  doc_type: slides
+  title: 4. isa-3
+  raw_path: raw/slides/4. isa-3.pptx
+  sha256: 378dc9b1d147ed3234566ab53b0e0edffa55a9d3543b0a869eaa7e183d9f8e98
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_5_datapath
+  doc_type: slides
+  title: 5. datapath
+  raw_path: raw/slides/5. datapath.pptx
+  sha256: a3c59b369a4e377e4dd63ca3e8c457ed72ceeace94cd89fdee3ced544ce06325
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_6_control_path
+  doc_type: slides
+  title: 6. control-path
+  raw_path: raw/slides/6. control-path.pptx
+  sha256: c805b4f873179b2e5fdd2e82600299d83badcc0c48bee85c3d528f84304ae62d
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_7_control_path_2
+  doc_type: slides
+  title: 7. control-path-2
+  raw_path: raw/slides/7. control-path-2.pptx
+  sha256: 20cc038728486a5a1b5e0d2f8417807e8a2b4ca7db396081436a508566b18f15
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_8_interrupts
+  doc_type: slides
+  title: 8. interrupts
+  raw_path: raw/slides/8. interrupts.pptx
+  sha256: ae9aeabd3becc35aa5672053cbb73dc6168bfc6891fb8ce995287d196beae913
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
+- doc_id: doc_slides_9_performance
+  doc_type: slides
+  title: 9. performance
+  raw_path: raw/slides/9. performance.pptx
+  sha256: cff7ce18ffb3f27105e6f122bc8558e1f5f906823017b432939ddaa80c9c9fae
+  ingestion:
+    adapter: pdf_pages_v1
+    chunk_tokens: 260
+    overlap_tokens: 50
+    extra: {}
