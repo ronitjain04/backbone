@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backbone</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app side-open" id="app">
+    <div class="search-overlay" id="searchOverlay">
+      <div class="search-modal">
+        <div class="search-header">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+          <input type="text" class="search-input" id="searchInput" placeholder="Search sessions..." autocomplete="off">
+          <button type="button" class="search-close" id="searchClose">&times;</button>
+        </div>
+        <div class="search-results" id="searchResults">
+          <div class="search-hint">Start typing to search across all sessions</div>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="app-exit" id="agvExit">Exit</button>
+    <aside class="side-icons" id="sideIcons">
+      <button class="si-btn" id="sidePanelBtn" title="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/></svg>
+      </button>
+      <button class="si-btn" id="sideNewBtn" title="New chat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <button class="si-btn" id="sideSearchBtn" title="Search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      </button>
+    </aside>
+    <aside class="side">
+      <div class="side-top">
+        <div class="side-brand">
+          <span class="side-logo">B</span>
+          <span class="side-name">Backbone</span>
+        </div>
+        <button class="btn-new" id="newBtn">New chat</button>
+      </div>
+
+      <div class="side-nav">
+        <div class="nav-group sess-group">
+          <div class="nav-heading">Guided Learning</div>
+          <div class="sess-list" id="sessListGuided">
+            <span class="sess-empty">No sessions yet</span>
+          </div>
+        </div>
+        <div class="nav-group sess-group">
+          <div class="nav-heading">Video Generation</div>
+          <div class="sess-list" id="sessListVideo">
+            <span class="sess-empty">No sessions yet</span>
+          </div>
+        </div>
+        <div class="nav-group sess-group">
+          <div class="nav-heading">Autograder</div>
+          <div class="sess-list" id="sessListAutograder">
+            <span class="sess-empty">No sessions yet</span>
+          </div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-heading">Processor</div>
+          <button class="nav-item" data-q="Explain the LC-2200 ISA: all instruction formats, opcodes, and register conventions">ISA &amp; Registers</button>
+          <button class="nav-item" data-q="Describe the LC-2200 datapath components and how data flows during ADD and LW execution">Datapath</button>
+          <button class="nav-item" data-q="How does the finite state machine control path orchestrate fetch-decode-execute?">Control Path</button>
+          <button class="nav-item" data-q="How does LC-2200 handle interrupts? Describe EI, DI, RETI and the interrupt mechanism">Interrupts</button>
+        </div>
+        <div class="nav-group">
+          <div class="nav-heading">Pipeline</div>
+          <button class="nav-item" data-q="How does instruction pipelining work? Describe the 5 stages and throughput gains">Pipelining Basics</button>
+          <button class="nav-item" data-q="Explain data hazards, control hazards, and how forwarding and stalling resolve them">Hazards &amp; Forwarding</button>
+          <button class="nav-item" data-q="How do you calculate CPI and what factors affect processor performance?">Performance</button>
+        </div>
+        <div class="nav-group">
+          <div class="nav-heading">Memory &amp; OS</div>
+          <button class="nav-item" data-q="Explain virtual memory, page tables, TLB, and the full address translation process">Virtual Memory</button>
+          <button class="nav-item" data-q="How does the memory hierarchy work? Explain L1/L2 cache, associativity, and replacement">Cache &amp; Hierarchy</button>
+          <button class="nav-item" data-q="Compare FCFS, SJF, Round Robin scheduling. When is each optimal?">Scheduling</button>
+          <button class="nav-item" data-q="Explain SIMD vs MIMD and shared memory vs message passing in parallel systems">Parallel Systems</button>
+          <button class="nav-item" data-q="How do disk scheduling and file systems organize and retrieve data?">Storage</button>
+        </div>
+      </div>
+
+      <div class="side-foot">
+        <span>CS 2200 · Georgia Tech</span>
+      </div>
+    </aside>
+
+    <main class="main" id="main">
+      <header class="main-header">
+        <div class="mh-left">
+          <h1 class="mh-title">Backbone</h1>
+          <p class="mh-subtitle" id="mhSubtitle">Guided Learning</p>
+        </div>
+      </header>
+      <section class="ag-graded" id="agGraded">
+        <div class="agv-doc">
+          <div class="agv-filename" id="agvFilename">submission.pdf</div>
+          <div class="agv-paper">
+            <div class="agv-paper-head">
+              <span class="agv-assignment" id="agvAssignment">Assignment 3</span>
+              <span class="agv-name" id="agvName">Student Name</span>
+            </div>
+            <div class="agv-questions" id="agvQuestions"></div>
+          </div>
+        </div>
+        <div class="agv-scores">
+          <div class="agv-scores-head">Score: <span class="agv-scores-val" id="agvTotal">37/50</span></div>
+          <div class="agv-scores-list" id="agvScoresList"></div>
+        </div>
+        <aside class="agv-chat">
+          <div class="agv-thread" id="agvThread"></div>
+          <form class="cs-compose" id="agvForm">
+            <div class="cs-compose-row">
+              <textarea id="agvInput" rows="1" placeholder="Reply..."></textarea>
+            </div>
+            <div class="cs-compose-foot">
+              <button type="button" class="cs-add" title="Add files and more">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="cs-foot-right">
+                <div class="vs-dd course-dd" id="agvCourseDd">
+                  <button type="button" class="course-btn">
+                    <span class="course-value" id="agvCourseValue">CS 2200</span>
+                    <svg class="vs-dd-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div class="vs-dd-menu course-menu">
+                    <button type="button" class="vs-dd-item" data-value="CS 1301">CS 1301</button>
+                    <button type="button" class="vs-dd-item" data-value="CS 1331">CS 1331</button>
+                    <button type="button" class="vs-dd-item" data-value="CS 1332">CS 1332</button>
+                    <button type="button" class="vs-dd-item" data-value="CS 2110">CS 2110</button>
+                    <button type="button" class="vs-dd-item active" data-value="CS 2200">CS 2200</button>
+                  </div>
+                </div>
+                <button type="submit" class="cs-go" id="agvGo" disabled>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+              </div>
+            </div>
+          </form>
+        </aside>
+      </section>
+      <section class="chat-split" id="chatSplit">
+        <div class="cs-left">
+          <div class="cs-ref-panel" id="refPanel"></div>
+        </div>
+        <aside class="cs-side">
+          <div class="cs-thread" id="csThread"></div>
+          <form class="cs-compose" id="csForm">
+            <div class="cs-compose-row">
+              <textarea id="csInput" rows="1" placeholder="Reply..."></textarea>
+            </div>
+            <div class="cs-compose-foot">
+              <button type="button" class="cs-add" title="Add files and more">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="cs-foot-right">
+                <div class="vs-dd course-dd" id="csCourseDd">
+                  <button type="button" class="course-btn">
+                    <span class="course-value" id="csCourseValue">CS 2200</span>
+                    <svg class="vs-dd-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  <div class="vs-dd-menu course-menu" id="csCourseMenu">
+                    <button type="button" class="vs-dd-item" data-value="CS 1301">CS 1301</button>
+                    <button type="button" class="vs-dd-item" data-value="CS 1331">CS 1331</button>
+                    <button type="button" class="vs-dd-item" data-value="CS 1332">CS 1332</button>
+                    <button type="button" class="vs-dd-item" data-value="CS 2110">CS 2110</button>
+                    <button type="button" class="vs-dd-item active" data-value="CS 2200">CS 2200</button>
+                  </div>
+                </div>
+                <button type="submit" class="cs-go" id="csGo" disabled>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </button>
+              </div>
+            </div>
+          </form>
+        </aside>
+      </section>
+      <div class="main-scroll" id="scroll">
+        <div class="empty" id="empty">
+          <h2 class="hero-heading">How can I guide your learning?</h2>
+        </div>
+        <div class="video-setup" id="videoSetup">
+          <h2 class="vs-title">Let's generate a video!</h2>
+          <div class="vs-options">
+            <div class="vs-dd" data-key="type">
+              <button type="button" class="vs-dd-btn" data-target="typeMenu">
+                <span class="vs-dd-label">Video Type</span>
+                <span class="vs-dd-value" id="typeValue">lecture-style</span>
+                <svg class="vs-dd-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="vs-dd-menu" id="typeMenu">
+                <button type="button" class="vs-dd-item" data-value="animated">animated</button>
+                <button type="button" class="vs-dd-item" data-value="slideshow">slideshow</button>
+                <button type="button" class="vs-dd-item active" data-value="lecture-style">lecture-style</button>
+              </div>
+            </div>
+            <div class="vs-dd" data-key="length">
+              <button type="button" class="vs-dd-btn" data-target="lengthMenu">
+                <span class="vs-dd-label">Video Length</span>
+                <span class="vs-dd-value" id="lengthValue">30 seconds</span>
+                <svg class="vs-dd-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div class="vs-dd-menu" id="lengthMenu">
+                <button type="button" class="vs-dd-item active" data-value="30 seconds">30 seconds</button>
+                <button type="button" class="vs-dd-item" data-value="60 seconds">60 seconds</button>
+                <button type="button" class="vs-dd-item" data-value="90 seconds">90 seconds</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="ag-setup" id="agSetup">
+          <h2 class="ag-title">Ready to test your work?</h2>
+          <div class="ag-main" id="agMainUpload">
+            <div class="ag-main-text">
+              <span class="ag-placeholder" id="agSubLabel">Upload Completed Submission (pdf)</span>
+            </div>
+            <div class="ag-main-toolbar">
+              <button type="button" class="ag-plus" id="agSubPlus" title="Upload PDF">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <div class="vs-dd course-dd" id="agCourseDd">
+                <button type="button" class="course-btn">
+                  <span class="course-value" id="agCourseValue">CS 2200</span>
+                  <svg class="vs-dd-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="vs-dd-menu course-menu" id="agCourseMenu">
+                  <button type="button" class="vs-dd-item" data-value="CS 1301">CS 1301</button>
+                  <button type="button" class="vs-dd-item" data-value="CS 1331">CS 1331</button>
+                  <button type="button" class="vs-dd-item" data-value="CS 1332">CS 1332</button>
+                  <button type="button" class="vs-dd-item" data-value="CS 2110">CS 2110</button>
+                  <button type="button" class="vs-dd-item active" data-value="CS 2200">CS 2200</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <input type="file" id="agSubFile" accept="application/pdf" multiple hidden>
+
+          <div class="ag-options">
+            <div class="ag-option-col">
+              <span class="ag-opt-label">Optional</span>
+              <button type="button" class="ag-small" id="agRubricBtn">
+                <span class="ag-plus-icon">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </span>
+                <span class="ag-small-text" id="agRubricLabel">Upload Rubric</span>
+              </button>
+              <input type="file" id="agRubricFile" accept="application/pdf" hidden>
+            </div>
+            <div class="ag-option-col">
+              <span class="ag-opt-label">Optional</span>
+              <div class="vs-dd ag-assign-dd" id="agAssignDd">
+                <button type="button" class="ag-small ag-assign-btn">
+                  <span class="ag-small-text" id="agAssignValue">Select Assignment</span>
+                  <svg class="vs-dd-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="vs-dd-menu ag-assign-menu" id="agAssignMenu">
+                  <button type="button" class="vs-dd-item" data-value="Homework 1">Homework 1</button>
+                  <button type="button" class="vs-dd-item" data-value="Homework 2">Homework 2</button>
+                  <button type="button" class="vs-dd-item" data-value="Homework 3">Homework 3</button>
+                  <button type="button" class="vs-dd-item" data-value="Project 1">Project 1</button>
+                  <button type="button" class="vs-dd-item" data-value="Project 2">Project 2</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="ag-grade-btn" id="agGradeBtn" disabled>Grade</button>
+        </div>
+        <div class="thread" id="thread"></div>
+      </div>
+
+      <div class="compose" id="compose">
+        <form class="compose-box" id="form">
+          <textarea id="input" rows="1" placeholder="Ask about any topic from class"></textarea>
+          <div class="compose-toolbar">
+            <div class="compose-toolbar-left">
+              <button type="button" class="tb-icon" id="attachBtn" title="Attach">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <button type="button" class="tb-tools" id="toolsBtn" title="Tools">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="var(--s1)" stroke="currentColor"/>
+                  <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="var(--s1)" stroke="currentColor"/>
+                  <line x1="4" y1="18" x2="20" y2="18"/><circle cx="9" cy="18" r="2" fill="var(--s1)" stroke="currentColor"/>
+                </svg>
+                <span>Tools</span>
+              </button>
+              <div class="tool-chip" id="toolChip">
+                <span class="tool-chip-label">🎬 Generate Video</span>
+                <button type="button" class="tool-chip-x" id="toolChipX">&times;</button>
+              </div>
+            </div>
+            <div class="compose-toolbar-right">
+              <div class="vs-dd course-dd" data-key="course" id="courseDd">
+                <button type="button" class="course-btn">
+                  <span class="course-value" id="courseValue">CS 2200</span>
+                  <svg class="vs-dd-caret" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="vs-dd-menu course-menu" id="courseMenu">
+                  <button type="button" class="vs-dd-item" data-value="CS 1301">CS 1301</button>
+                  <button type="button" class="vs-dd-item" data-value="CS 1331">CS 1331</button>
+                  <button type="button" class="vs-dd-item" data-value="CS 1332">CS 1332</button>
+                  <button type="button" class="vs-dd-item" data-value="CS 2110">CS 2110</button>
+                  <button type="button" class="vs-dd-item active" data-value="CS 2200">CS 2200</button>
+                </div>
+              </div>
+              <button type="submit" class="compose-go" id="go" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="tools-menu" id="toolsMenu">
+            <button type="button" class="tools-item" id="guidedTool">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Guided Learning
+            </button>
+            <button type="button" class="tools-item" id="videoTool">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+              Generate Video
+            </button>
+            <button type="button" class="tools-item" id="autograderTool">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
+              Autograder
+            </button>
+          </div>
+        </form>
+        <div class="compose-status">
+          <span class="dot" id="dot"></span>
+          <span id="stxt">Ready</span>
+        </div>
+      </div>
+    </main>
+
+    <section class="video-view" id="videoView">
+      <div class="vv-left">
+        <div class="vv-header">
+          <h1 class="vv-title">Backbone</h1>
+          <p class="vv-subtitle">Video Generation</p>
+        </div>
+        <div class="vv-player-wrap">
+          <video class="vv-player" id="vvPlayer" controls playsinline>
+            <source id="vvSource" src="" type="video/mp4">
+          </video>
+        </div>
+      </div>
+      <aside class="vv-side">
+        <div class="vv-thread" id="vvThread"></div>
+        <form class="vv-compose" id="vvForm">
+          <div class="vv-compose-row">
+            <button type="button" class="vv-add" title="Attach">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <textarea id="vvInput" rows="1" placeholder="Reply..."></textarea>
+          </div>
+          <div class="vv-compose-foot">
+            <select class="vv-course" id="vvCourse">
+              <option>CS 2110</option>
+              <option>CS 2200</option>
+              <option>CS 3510</option>
+            </select>
+            <button type="submit" class="vv-go" id="vvGo" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </form>
+      </aside>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
