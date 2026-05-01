@@ -17,6 +17,7 @@ const autograderTool = $("#autograderTool");
 const toolChip = $("#toolChip");
 const toolChipX = $("#toolChipX");
 const toolChipLabel = toolChip.querySelector(".tool-chip-label");
+const featureTabs = $$('[data-mode-tab]');
 
 let busy = false;
 let activeMode = "guided"; // 'guided' | 'video' | 'autograder' | null
@@ -56,8 +57,29 @@ function setMode(mode) {
     saveCurrentAutograder();
     current.autograder = null;
   }
+  const app = document.getElementById("app");
+  const main = document.getElementById("main");
+  app.classList.remove("video-mode");
+  app.classList.remove("exitable");
+  main.classList.remove("chat-mode");
+  main.classList.remove("ag-graded-mode");
+  try { document.getElementById("vvPlayer").pause(); } catch (_) {}
+  thread.innerHTML = "";
   if (typeof renderSessionLists === "function") renderSessionLists();
   activeMode = mode;
+  updateModeUI(mode);
+  toolsMenu.classList.remove("open");
+  updateSetupPanels();
+  input.focus();
+}
+
+function syncFeatureTabs(mode) {
+  featureTabs.forEach(tab => {
+    tab.classList.toggle("active", tab.dataset.modeTab === mode);
+  });
+}
+
+function updateModeUI(mode) {
   input.placeholder = PLACEHOLDERS[mode] || PLACEHOLDERS.default;
   if (mode && CHIP_LABELS[mode]) {
     toolChipLabel.textContent = CHIP_LABELS[mode];
@@ -65,11 +87,12 @@ function setMode(mode) {
   } else {
     toolChip.classList.remove("on");
   }
-  const sub = document.getElementById("mhSubtitle");
-  if (sub) sub.textContent = SUBTITLES[mode] || SUBTITLES.default;
-  toolsMenu.classList.remove("open");
-  updateSetupPanels();
-  input.focus();
+  const subtitle = SUBTITLES[mode] || SUBTITLES.default;
+  const mainSubtitle = document.getElementById("mhSubtitle");
+  const videoSubtitle = document.getElementById("vvSubtitle");
+  if (mainSubtitle) mainSubtitle.textContent = subtitle;
+  if (videoSubtitle) videoSubtitle.textContent = subtitle;
+  syncFeatureTabs(mode);
 }
 
 function updateSetupPanels() {
@@ -132,6 +155,13 @@ guidedTool.addEventListener("click", () => setMode("guided"));
 videoTool.addEventListener("click", () => setMode("video"));
 autograderTool.addEventListener("click", () => setMode("autograder"));
 toolChipX.addEventListener("click", () => setMode("guided"));
+featureTabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    const mode = tab.dataset.modeTab;
+    if (!mode || mode === activeMode) return;
+    setMode(mode);
+  });
+});
 
 // Course dropdown
 const courseDd = $("#courseDd");
@@ -168,6 +198,23 @@ const agAssignValue = $("#agAssignValue");
 const agCourseDd = $("#agCourseDd");
 const agCourseValue = $("#agCourseValue");
 
+function confirmAction(message) {
+  return window.confirm(message);
+}
+
+function clearSubmissionSelection() {
+  agSubFile.value = "";
+  agSubLabel.textContent = "Upload Completed Submission (pdf)";
+  agSubLabel.classList.remove("filled");
+  agGradeBtn.disabled = true;
+}
+
+function clearRubricSelection() {
+  agRubricFile.value = "";
+  agRubricLabel.textContent = "Upload Rubric";
+  agRubricLabel.classList.remove("filled");
+}
+
 function openSubFile(e) {
   if (e.target.closest(".course-dd")) return;
   agSubFile.click();
@@ -180,6 +227,12 @@ const agGradeBtn = $("#agGradeBtn");
 agSubFile.addEventListener("change", () => {
   const files = Array.from(agSubFile.files || []);
   if (!files.length) return;
+  const summary = files.length === 1 ? files[0].name : `${files.length} files`;
+  const ok = confirmAction(`Use ${summary} as the submission upload?`);
+  if (!ok) {
+    clearSubmissionSelection();
+    return;
+  }
   agSubLabel.textContent = files.length === 1
     ? files[0].name
     : `${files.length} files selected \u00b7 ${files.map(f => f.name).join(", ")}`;
@@ -190,6 +243,9 @@ agSubFile.addEventListener("change", () => {
 agGradeBtn.addEventListener("click", () => {
   const files = Array.from(agSubFile.files || []);
   if (!files.length) return;
+  const summary = files.length === 1 ? files[0].name : `${files.length} files`;
+  const ok = confirmAction(`Start grading with ${summary}?`);
+  if (!ok) return;
   const label = files.length === 1 ? files[0].name : `${files.length} files`;
   // Create an autograder session
   const entry = {
@@ -209,6 +265,11 @@ agRubricBtn.addEventListener("click", () => agRubricFile.click());
 agRubricFile.addEventListener("change", () => {
   const f = agRubricFile.files[0];
   if (!f) return;
+  const ok = confirmAction(`Use ${f.name} as the rubric upload?`);
+  if (!ok) {
+    clearRubricSelection();
+    return;
+  }
   agRubricLabel.textContent = f.name;
   agRubricLabel.classList.add("filled");
 });
@@ -401,18 +462,15 @@ $("#agvExit").addEventListener("click", () => {
   const main = document.getElementById("main");
   if (app.classList.contains("video-mode")) {
     saveCurrentVideo();
-    current.video = null;
     app.classList.remove("video-mode");
     try { document.getElementById("vvPlayer").pause(); } catch (_) {}
   }
   if (main.classList.contains("chat-mode")) {
     saveCurrentGuided();
-    current.guided = null;
     main.classList.remove("chat-mode");
   }
   if (main.classList.contains("ag-graded-mode")) {
     saveCurrentAutograder();
-    current.autograder = null;
     main.classList.remove("ag-graded-mode");
   }
   app.classList.remove("exitable");
@@ -561,8 +619,50 @@ const csInput = $("#csInput");
 const csGo = $("#csGo");
 const csThread = $("#csThread");
 const refPanel = $("#refPanel");
+const refPanelCount = $("#refPanelCount");
 const csCourseDd = $("#csCourseDd");
 const csCourseValue = $("#csCourseValue");
+
+function updateReferenceCount() {
+  const count = refPanel.querySelectorAll(".cs-ref-card").length;
+  refPanelCount.textContent = count > 0 ? String(count) : "";
+  refPanelCount.classList.toggle("is-hidden", count === 0);
+  return count;
+}
+
+function syncReferenceEmptyState() {
+  normalizeReferenceCards();
+  const currentEmpty = refPanel.querySelector(".cs-ref-empty");
+  if (currentEmpty) currentEmpty.remove();
+  const count = updateReferenceCount();
+  if (count > 0) return;
+  const empty = document.createElement("div");
+  empty.className = "cs-ref-empty";
+  empty.textContent = "No references for this response.";
+  refPanel.appendChild(empty);
+}
+
+function makeReferenceTitle(ch, fallbackIndex) {
+  if (ch.slide_name && ch.slide_number) return `${ch.slide_name} · Slide ${ch.slide_number}`;
+  if (ch.slide_name) return ch.slide_name;
+  if (ch.slide_number) return `Slide ${ch.slide_number}`;
+  if (ch.source) return `${ch.source} excerpt ${fallbackIndex}`;
+  return `Source excerpt ${fallbackIndex}`;
+}
+
+function normalizeReferenceCards() {
+  refPanel.querySelectorAll(".cs-ref-card").forEach(card => {
+    const toggleNode = card.querySelector(".cs-ref-toggle");
+    if (toggleNode && toggleNode.tagName === "BUTTON") {
+      const staticHead = document.createElement("div");
+      staticHead.className = "cs-ref-toggle";
+      while (toggleNode.firstChild) staticHead.appendChild(toggleNode.firstChild);
+      toggleNode.replaceWith(staticHead);
+    }
+
+    card.querySelectorAll(".cs-ref-close").forEach(btn => btn.remove());
+  });
+}
 
 function enterChatMode(firstQ, firstData) {
   const main = document.getElementById("main");
@@ -601,36 +701,45 @@ function renderReferences(data, query) {
   const keywords = extractKeywords(query);
 
   if (!data.context?.length && !data.citations?.length) {
-    const el = document.createElement("div");
-    el.className = "cs-ref-empty";
-    el.textContent = "No references for this response.";
-    refPanel.appendChild(el);
+    syncReferenceEmptyState();
     return;
   }
 
   if (data.citations?.length) {
-    const c = data.citations[0];
     const head = document.createElement("div");
     head.className = "cs-ref-head";
-    head.innerHTML = `Reference: <span class="cs-ref-src">${esc(c.source)}${c.details ? ", " + esc(c.details) : ""}</span>`;
+    head.innerHTML = data.citations.map(c => (
+      `<span class="cs-ref-src">${esc(c.source)}${c.details ? " · " + esc(c.details) : ""}</span>`
+    )).join("");
     refPanel.appendChild(head);
   }
 
-  (data.context || []).forEach(ch => {
+  (data.context || []).forEach((ch, index) => {
     const card = document.createElement("div");
     card.className = "cs-ref-card";
     const src = ch.source || "text";
     const cls = src === "slides" ? "sl" : "bk";
+    const title = makeReferenceTitle(ch, index + 1);
     let meta = `<span class="ctx-t ${cls}">${esc(src)}</span>`;
     if (ch.slide_name) meta += `<span class="ctx-t nt">${esc(ch.slide_name)}</span>`;
     if (ch.slide_number) meta += `<span class="ctx-t nt">Slide ${ch.slide_number}</span>`;
     if (ch.data_source_type) meta += `<span class="ctx-t nt">${esc(ch.data_source_type)}</span>`;
     card.innerHTML = `
-      <div class="cs-ref-meta">${meta}</div>
+      <div class="cs-ref-card-head">
+        <div class="cs-ref-toggle">
+          <span class="cs-ref-num">${index + 1}</span>
+          <div class="cs-ref-card-main">
+            <div class="cs-ref-card-title">${esc(title)}</div>
+            <div class="cs-ref-meta">${meta}</div>
+          </div>
+        </div>
+      </div>
       <div class="cs-ref-body">${highlightText(ch.text, keywords)}</div>
     `;
     refPanel.appendChild(card);
   });
+
+  updateReferenceCount();
 }
 
 function addCsQ(text) {
@@ -729,6 +838,31 @@ const vvForm = $("#vvForm");
 const vvInput = $("#vvInput");
 const vvGo = $("#vvGo");
 const vvThread = $("#vvThread");
+const vvResetBtn = $("#vvResetBtn");
+
+function resetVideoScreen() {
+  const ok = confirmAction("Reset the video screen and start fresh?");
+  if (!ok) return;
+
+  saveCurrentVideo();
+  current.video = null;
+
+  const src = document.getElementById("vvSource");
+  const player = document.getElementById("vvPlayer");
+  try { player.pause(); } catch (_) {}
+  src.src = "";
+  try { player.load(); } catch (_) {}
+
+  vvThread.innerHTML = "";
+  vvInput.value = "";
+  vvInput.style.height = "auto";
+  vvGo.disabled = true;
+
+  setMode("video");
+  renderSessionLists();
+}
+
+if (vvResetBtn) vvResetBtn.addEventListener("click", resetVideoScreen);
 
 function enterVideoView(query, videoUrl) {
   const app = document.getElementById("app");
@@ -839,6 +973,7 @@ function openSession(kind, id) {
     main.classList.add("chat-mode");
     csThread.innerHTML = entry.csThreadHtml || "";
     refPanel.innerHTML = entry.refPanelHtml || "";
+    syncReferenceEmptyState();
     current.guided = entry;
     activeMode = "guided";
     setChipForMode("guided");
@@ -873,15 +1008,7 @@ function openSession(kind, id) {
 }
 
 function setChipForMode(mode) {
-  input.placeholder = PLACEHOLDERS[mode] || PLACEHOLDERS.default;
-  if (mode && CHIP_LABELS[mode]) {
-    toolChipLabel.textContent = CHIP_LABELS[mode];
-    toolChip.classList.add("on");
-  } else {
-    toolChip.classList.remove("on");
-  }
-  const sub = document.getElementById("mhSubtitle");
-  if (sub) sub.textContent = SUBTITLES[mode] || SUBTITLES.default;
+  updateModeUI(mode);
 }
 
 function addVvQ(text) {

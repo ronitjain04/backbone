@@ -97,6 +97,11 @@
           <h1 class="mh-title">Backbone</h1>
           <p class="mh-subtitle" id="mhSubtitle">Guided Learning</p>
         </div>
+        <div class="feature-tabs" aria-label="Product features">
+          <button type="button" class="feature-tab active" data-mode-tab="guided">Guided Learning</button>
+          <button type="button" class="feature-tab" data-mode-tab="autograder">Autograder</button>
+          <button type="button" class="feature-tab" data-mode-tab="video">Video Generation</button>
+        </div>
       </header>
       <section class="ag-graded" id="agGraded">
         <div class="agv-doc">
@@ -147,9 +152,16 @@
       </section>
       <section class="chat-split" id="chatSplit">
         <div class="cs-left">
+          <div class="cs-panel-head">
+            <h2 class="cs-panel-title">Source Material</h2>
+            <span class="cs-panel-count is-hidden" id="refPanelCount"></span>
+          </div>
           <div class="cs-ref-panel" id="refPanel"></div>
         </div>
         <aside class="cs-side">
+          <div class="cs-panel-head cs-panel-head-side">
+            <h2 class="cs-panel-title">Ask a Follow-Up</h2>
+          </div>
           <div class="cs-thread" id="csThread"></div>
           <form class="cs-compose" id="csForm">
             <div class="cs-compose-row">
@@ -341,7 +353,13 @@
       <div class="vv-left">
         <div class="vv-header">
           <h1 class="vv-title">Backbone</h1>
-          <p class="vv-subtitle">Video Generation</p>
+          <p class="vv-subtitle" id="vvSubtitle">Video Generation</p>
+          <div class="feature-tabs feature-tabs-inline" aria-label="Product features">
+            <button type="button" class="feature-tab active" data-mode-tab="guided">Guided Learning</button>
+            <button type="button" class="feature-tab" data-mode-tab="autograder">Autograder</button>
+            <button type="button" class="feature-tab" data-mode-tab="video">Video Generation</button>
+          </div>
+          <button type="button" class="vv-reset" id="vvResetBtn">Reset Video Screen</button>
         </div>
         <div class="vv-player-wrap">
           <video class="vv-player" id="vvPlayer" controls playsinline>

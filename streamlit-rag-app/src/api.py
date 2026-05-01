@@ -67,6 +67,12 @@ class ChatRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=MAX_QUERY_LENGTH)
 
 
+class WaitlistRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    email: str = Field(..., min_length=3, max_length=254)
+    phone: str = Field(..., min_length=7, max_length=32)
+
+
 class Citation(BaseModel):
     source: str
     details: str
@@ -136,6 +142,33 @@ async def chat(req: ChatRequest, request: Request):
         ))
 
     return ChatResponse(answer=response, citations=citations, context=context)
+
+
+@app.post("/api/waitlist")
+async def waitlist_signup(req: WaitlistRequest):
+    # Basic normalization/sanitization for plain-text logging.
+    name = req.name.strip().replace("\n", " ").replace("\r", " ")
+    email = req.email.strip().replace("\n", "").replace("\r", "")
+    phone = req.phone.strip().replace("\n", " ").replace("\r", " ")
+
+    if "@" not in email or "." not in email.split("@")[-1]:
+        raise HTTPException(status_code=400, detail="Please provide a valid email address.")
+
+    if not any(ch.isdigit() for ch in phone):
+        raise HTTPException(status_code=400, detail="Please provide a valid phone number.")
+
+    signup_path = os.path.join(os.path.dirname(__file__), "waitlist_signups.txt")
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{timestamp}] name={name} | email={email} | phone={phone}\n"
+
+    try:
+        with open(signup_path, "a", encoding="utf-8") as f:
+            f.write(line)
+    except OSError:
+        logger.exception("Failed to write waitlist signup")
+        raise HTTPException(status_code=500, detail="Could not save signup. Please try again.")
+
+    return {"ok": True, "message": "Thanks! You are on the waitlist."}
 
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
