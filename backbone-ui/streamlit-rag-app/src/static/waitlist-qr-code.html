@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backbone Waitlist QR Code</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #111113;
+      --s1: #18181b;
+      --s2: #1f1f23;
+      --bd: rgba(255,255,255,0.08);
+      --t0: #ededef;
+      --t1: #a0a0a8;
+      --blue: #3e63dd;
+      --blue-h: #4f70e0;
+      --r: 10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+      color: var(--t0);
+      background:
+        radial-gradient(800px 400px at 20% -10%, rgba(62,99,221,0.2), transparent 50%),
+        radial-gradient(700px 350px at 100% 0%, rgba(48,164,108,0.13), transparent 55%),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      border: 1px solid var(--bd);
+      background: linear-gradient(180deg, var(--s1), var(--s2));
+      border-radius: 16px;
+      padding: 26px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.15;
+    }
+
+    .sub {
+      margin: 0 0 18px;
+      color: var(--t1);
+      font-size: 14px;
+    }
+
+    .qr-wrap {
+      display: inline-flex;
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+      margin: 8px 0 14px;
+    }
+
+    .qr-box {
+      position: relative;
+      width: 250px;
+      height: 250px;
+    }
+
+    #qrcode {
+      width: 250px;
+      height: 250px;
+    }
+
+    .qr-logo {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: #111113;
+      color: #ededef;
+      font-size: 24px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 4px solid #ffffff;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .link-box {
+      margin-top: 6px;
+      color: var(--t1);
+      font-size: 13px;
+      word-break: break-all;
+    }
+
+    .actions {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      border: none;
+      border-radius: var(--r);
+      padding: 10px 14px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .btn:hover { background: var(--blue-h); }
+    .btn.secondary {
+      background: transparent;
+      color: var(--t0);
+      border: 1px solid var(--bd);
+    }
+    .btn.secondary:hover { background: rgba(255,255,255,0.05); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Waitlist QR Code</h1>
+    <p class="sub">Scan this code to open the waitlist signup page.</p>
+
+    <div class="qr-wrap">
+      <div class="qr-box">
+        <div id="qrcode" aria-label="QR code for waitlist signup"></div>
+        <div class="qr-logo" aria-hidden="true">B</div>
+      </div>
+    </div>
+
+    <div class="link-box" id="waitlistUrl"></div>
+
+    <div class="actions">
+      <a id="openWaitlist" class="btn" href="/waitlist.html">Open Waitlist</a>
+      <button id="copyBtn" type="button" class="btn secondary">Copy Link</button>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script>
+    const waitlistLink = "http://10.90.69.74:8000/waitlist.html";
+    document.getElementById("waitlistUrl").textContent = waitlistLink;
+    document.getElementById("openWaitlist").href = waitlistLink;
+
+    new QRCode(document.getElementById("qrcode"), {
+      text: waitlistLink,
+      width: 250,
+      height: 250,
+      colorDark: "#111113",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M,
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(waitlistLink);
+        document.getElementById("copyBtn").textContent = "Copied";
+        setTimeout(() => {
+          document.getElementById("copyBtn").textContent = "Copy Link";
+        }, 1200);
+      } catch (_) {
+        document.getElementById("copyBtn").textContent = "Copy failed";
+        setTimeout(() => {
+          document.getElementById("copyBtn").textContent = "Copy Link";
+        }, 1200);
+      }
+    });
+  </script>
+</body>
+</html>

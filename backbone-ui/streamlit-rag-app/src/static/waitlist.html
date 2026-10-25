@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backbone Waitlist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #111113;
+      --s1: #18181b;
+      --s2: #1f1f23;
+      --bd: rgba(255,255,255,0.08);
+      --t0: #ededef;
+      --t1: #a0a0a8;
+      --blue: #3e63dd;
+      --blue-h: #4f70e0;
+      --ok: #30a46c;
+      --bad: #e5484d;
+      --r: 10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+      color: var(--t0);
+      background:
+        radial-gradient(800px 400px at 20% -10%, rgba(62,99,221,0.2), transparent 50%),
+        radial-gradient(700px 350px at 100% 0%, rgba(48,164,108,0.13), transparent 55%),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 520px;
+      border: 1px solid var(--bd);
+      background: linear-gradient(180deg, var(--s1), var(--s2));
+      border-radius: 16px;
+      padding: 26px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.15;
+    }
+
+    .sub {
+      margin: 0 0 20px;
+      color: var(--t1);
+      font-size: 14px;
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      font-size: 13px;
+      color: var(--t1);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--bd);
+      background: rgba(255,255,255,0.02);
+      color: var(--t0);
+      border-radius: var(--r);
+      padding: 11px 12px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    input:focus {
+      border-color: rgba(62,99,221,0.8);
+      box-shadow: 0 0 0 3px rgba(62,99,221,0.2);
+    }
+
+    button {
+      margin-top: 6px;
+      border: none;
+      border-radius: var(--r);
+      padding: 12px 14px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    button:hover { background: var(--blue-h); }
+    button:disabled { opacity: 0.7; cursor: not-allowed; }
+
+    .status {
+      min-height: 20px;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--bad); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Sign Up For Waitlist</h1>
+    <p class="sub">Drop your details and we will contact you when new access opens.</p>
+
+    <form id="waitlistForm">
+      <div>
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" required />
+      </div>
+
+      <div>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" required />
+      </div>
+
+      <div>
+        <label for="phone">Phone Number</label>
+        <input id="phone" name="phone" type="tel" required />
+      </div>
+
+      <button id="submitBtn" type="submit">Join Waitlist</button>
+      <div id="status" class="status" aria-live="polite"></div>
+    </form>
+  </main>
+
+  <script>
+    const form = document.getElementById("waitlistForm");
+    const statusEl = document.getElementById("status");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusEl.textContent = "";
+      statusEl.className = "status";
+      submitBtn.disabled = true;
+
+      const payload = {
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value,
+      };
+
+      try {
+        const r = await fetch("/api/waitlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          throw new Error(d.detail || "Failed to join waitlist.");
+        }
+
+        statusEl.textContent = d.message || "Success!";
+        statusEl.classList.add("ok");
+        form.reset();
+      } catch (err) {
+        statusEl.textContent = err.message || "Something went wrong.";
+        statusEl.classList.add("err");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
