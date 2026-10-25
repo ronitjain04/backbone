@@ -1,0 +1,8 @@
+# Local signup records and credentials
+**/waitlist_signups.txt
+**/.env
+**/.env.local
+.DS_Store
+__pycache__/
+*.py[cod]
+*.egg-info/
