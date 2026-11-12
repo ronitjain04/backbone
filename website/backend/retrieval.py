@@ -2,16 +2,33 @@
 import json
 import math
 import re
+import base64
+import gzip
+import io
 from collections import Counter
 from pathlib import Path
 
 STOP = set('what which where when how does do is are a an the of to and in for with explain me about can you it from'.split())
 def words(text): return [w for w in re.findall(r'[a-z0-9]+', text.lower()) if w not in STOP and len(w)>2]
 
+def read_corpus(path):
+    path = Path(path)
+    limit = 20 * 1024 * 1024
+    if path.stat().st_size > limit:
+        raise ValueError('Course corpus is too large')
+    raw = path.read_bytes()
+    if path.name.endswith('.jsonl.gz.b64'):
+        compressed = base64.b64decode(raw.strip(), validate=True)
+        with gzip.GzipFile(fileobj=io.BytesIO(compressed)) as stream:
+            raw = stream.read(limit + 1)
+        if len(raw) > limit:
+            raise ValueError('Expanded course corpus is too large')
+    return raw.decode('utf-8')
+
 class Retriever:
     def __init__(self, path, mode='lexical', model_name='sentence-transformers/all-MiniLM-L6-v2'):
         self.chunks = []
-        for line in Path(path).read_text().splitlines():
+        for line in read_corpus(path).splitlines():
             if not line.strip(): continue
             c=json.loads(line)
             if not all(isinstance(c.get(k),str) and c[k].strip() for k in ['text','source']): raise ValueError('Invalid corpus document')

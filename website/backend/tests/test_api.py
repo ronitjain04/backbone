@@ -84,3 +84,41 @@ def test_truncated_provider_answer_is_explicitly_marked():
             answer=await model.answer('hazards',Retriever().search('hazards'))
             assert 'output limit' in answer.lower()
     asyncio.run(run())
+
+def test_course_selection_keeps_real_retrieval_and_citations_isolated(tmp_path):
+    import json
+    from website.backend.retrieval import Retriever as CorpusRetriever
+    retrievers = {}
+    for course, text in [('cs2110', 'LC-3 memory has word addressability.'),
+                         ('cs2200', 'Virtual memory uses page tables.')]:
+        path = tmp_path / f'{course}.jsonl'
+        path.write_text(json.dumps({'text': text, 'source': course, 'details': 'Memory'}))
+        retrievers[course] = CorpusRetriever(path)
+    with TestClient(create_app(retrievers=retrievers, model=Model(), allow_unauthenticated=True)) as c:
+        for course in ['cs2110', 'cs2200']:
+            response = c.post('/api/chat', json={'query': 'memory', 'course': course})
+            assert response.status_code == 200
+            data = response.json()
+            assert data['course'] == course
+            assert {source['source'] for source in data['citations']} == {course}
+        assert c.post('/api/chat', json={'query': 'memory', 'course': 'cs9999'}).status_code == 422
+
+def test_unconfigured_course_never_uses_the_other_courses_notes():
+    with client() as c:
+        assert c.get('/ready?course=cs2200').status_code == 200
+        assert c.get('/ready?course=cs2110').status_code == 503
+        assert c.post('/api/chat', json={'query': 'memory', 'course': 'cs2110'}).status_code == 503
+        assert c.post('/api/chat', json={'query': 'hazards'}).json()['course'] == 'cs2200'
+
+def test_course_paths_load_independently_when_one_corpus_is_invalid(tmp_path, monkeypatch):
+    import json
+    path = tmp_path / 'cs2110.jsonl'
+    path.write_text(json.dumps({'text': 'LC-3 memory addressability', 'source': '2110', 'details': 'Memory'}))
+    monkeypatch.setenv('CS2110_CORPUS_PATH', str(path))
+    monkeypatch.setenv('CS2200_CORPUS_PATH', str(tmp_path / 'missing.jsonl'))
+    with TestClient(create_app(model=Model(), allow_unauthenticated=True)) as c:
+        assert c.get('/ready').status_code == 200
+        assert c.get('/ready?course=cs2110').status_code == 200
+        assert c.get('/ready?course=cs2200').status_code == 503
+        data = c.post('/api/chat', json={'query': 'addressability', 'course': 'cs2110'}).json()
+        assert data['citations'][0]['source'] == '2110'

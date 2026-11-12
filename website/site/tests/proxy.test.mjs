@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {handleRequest} from '../proxy.mjs';
-const request = (query='hazards') => new Request('https://backbone.example/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+const request = (query='hazards',course) => new Request('https://backbone.example/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,course})});
 test('missing upstream is explicitly unavailable', async()=>{assert.equal((await handleRequest(request(), {})).status,503)});
 test('rejects invalid questions before forwarding', async()=>{for(const q of ['', ' '.repeat(4), 'a'.repeat(2001)]) assert.equal((await handleRequest(request(q),{})).status,400)});
 test('forwards only to configured upstream and keeps auth server side',async()=>{
@@ -27,4 +27,27 @@ test('supports the edge runtime without following upstream redirects',async()=>{
  assert.equal((await handleRequest(request(),{BACKEND_URL:'https://api.example'},edgeFetch)).status,200);
  const redirect=async(url,options)=>{assert.equal(options.redirect,'manual');return new Response(null,{status:302,headers:{Location:'https://other.example'}})};
  assert.equal((await handleRequest(request(),{BACKEND_URL:'https://api.example',BACKEND_TOKEN:'private'},redirect)).status,502);
+});
+test('forwards the chosen course and refuses unknown course IDs before contacting the backend',async()=>{
+ const env={BACKEND_URL:'https://api.example'};
+ let calls=0;
+ const fetcher=async(url,options)=>{calls++;assert.equal(JSON.parse(options.body).course,'cs2110');return Response.json({course:'cs2110',answer:'LC-3 [1]',citations:[],context:[]})};
+ assert.equal((await handleRequest(request('memory','cs2110'),env,fetcher)).status,200);
+ for(const course of ['cs9999',null,2110,''])assert.equal((await handleRequest(request('memory',course),env,fetcher)).status,400);
+ assert.equal(calls,1);
+});
+test('an old or mismatched backend cannot answer CS 2110 with CS 2200 material',async()=>{
+ for(const course of [undefined,'cs2200']){
+  const response=await handleRequest(request('memory','cs2110'),{BACKEND_URL:'https://api.example'},async()=>Response.json({course,answer:'Wrong course',citations:[],context:[]}));
+  assert.equal(response.status,503);
+ }
+});
+test('readiness is checked for the selected course and old backends cannot advertise CS 2110',async()=>{
+ const req=new Request('https://backbone.example/api/status?course=cs2110');
+ const env={BACKEND_URL:'https://api.example'};
+ const r=await handleRequest(req,env,async url=>{assert.equal(url,'https://api.example/ready?course=cs2110');return Response.json({courses:['cs2110']})});
+ assert.deepEqual(await r.json(),{ready:true});
+ const legacy=await handleRequest(req,env,async()=>Response.json({status:'configured'}));
+ assert.deepEqual(await legacy.json(),{ready:false});
+ assert.equal((await handleRequest(new Request('https://backbone.example/api/status?course=other'),env)).status,400);
 });
