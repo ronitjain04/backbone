@@ -1,3 +1,5 @@
+import {renderAnswer} from './answer-renderer.mjs';
+
 const form=document.querySelector('#question-form'),input=document.querySelector('#question'),messages=document.querySelector('#messages'),send=document.querySelector('#send'),error=document.querySelector('#error'),welcome=document.querySelector('#welcome'),clear=document.querySelector('#clear');
 const tabs=[...document.querySelectorAll('[data-course]')];
 const suggestions=[...document.querySelectorAll('[data-question]')];
@@ -44,10 +46,12 @@ function selectCourse(course){
  input.placeholder=info.questions[0];
  renderChat();status(course);
 }
-function message(state,role,text){
+function message(state,role,text,formatted=false){
  const article=document.createElement('article');article.className='message '+role;
  const label=document.createElement('div');label.className='message-label';label.textContent=role==='user'?'YOU':'BACKBONE';
- const p=document.createElement('p');p.textContent=text;article.append(label,p);state.nodes.push(article);return article;
+ const body=formatted?renderAnswer(text):document.createElement('p');
+ if(!formatted)body.textContent=text;
+ article.append(label,body);state.nodes.push(article);return article;
 }
 input.addEventListener('input',()=>{states[selected].draft=input.value;count()});
 input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();form.requestSubmit()}});
@@ -74,7 +78,7 @@ form.addEventListener('submit',async e=>{
   const data=await r.json();
   if(!r.ok)throw Error(typeof data.detail==='string'?data.detail:'The answer service is unavailable. Please try again.');
   if(typeof data.answer!=='string')throw Error('The service returned an invalid answer. Please try again.');
-  state.nodes=state.nodes.filter(node=>node!==loading);const answer=message(state,'assistant',data.answer);
+  state.nodes=state.nodes.filter(node=>node!==loading);const answer=message(state,'assistant',data.answer,true);
   if(data.citations?.length){
    const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`Explore ${data.citations.length} retrieved source${data.citations.length===1?'':'s'}`;details.append(summary);
    data.citations.forEach((citation,i)=>{const source=document.createElement('div');source.className='source';const title=document.createElement('b');title.textContent=`[${i+1}] ${citation.source}${citation.details?' · '+citation.details:''}`;source.append(title);const text=document.createElement('p');text.textContent=data.context?.[i]?.text||'No excerpt available.';source.append(text);details.append(source)});answer.append(details);
