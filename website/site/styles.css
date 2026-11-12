@@ -3,3 +3,39 @@
 @media(max-width:400px){.beta{display:none}.nav nav{gap:12px;font-size:10px;white-space:nowrap}.nav-try{padding:9px 8px}.brand{font-size:21px;gap:8px}h1{font-size:70px}}@media(max-width:720px){#send{width:40px;height:40px}.clear-button{min-height:44px}}
 
 .course-tabs{display:flex;gap:8px;margin:0 0 16px}.course-tabs button{min-height:56px;flex:1;max-width:310px;border:1px solid #d5d9cb;border-radius:8px;background:#f8f7f1;color:#69745e;padding:12px 16px;text-align:left;font-weight:600;font-size:13px;transition:background .15s}.course-tabs button span{display:block;font-size:10px;font-weight:400;margin-top:4px;line-height:1.5}.course-tabs button[aria-selected="true"]{background:var(--green);border-color:var(--green);color:#fff}.course-tabs button:hover{border-color:var(--green)}@media(max-width:720px){.course-tabs button{padding:11px 12px;max-width:none}.course-tabs button span{font-size:9px}.course-tabs{gap:7px}}
+
+/* Assistant answer typography. Questions and retrieved excerpts stay literal. */
+.answer-body{font-size:13px;line-height:1.85;overflow-wrap:anywhere;min-width:0}
+.answer-body>:first-child{margin-top:0}
+.answer-body>:last-child{margin-bottom:0}
+.answer-body p{white-space:normal;margin:0 0 14px;line-height:1.85}
+.answer-body h1,.answer-body h2,.answer-body h3,.answer-body h4,.answer-body h5,.answer-body h6{font-family:var(--sans);font-weight:650;line-height:1.4;letter-spacing:0;color:var(--ink);margin:22px 0 10px}
+.answer-body h1{font-size:20px}.answer-body h2{font-size:18px}.answer-body h3{font-size:16px}.answer-body h4,.answer-body h5,.answer-body h6{font-size:14px}
+.answer-body strong{font-weight:650}.answer-body em{font-style:italic}
+.answer-body ul,.answer-body ol{padding-left:24px;margin:10px 0 16px}
+.answer-body li{padding-left:3px;margin:5px 0}
+.answer-body li>p{margin:5px 0}
+.answer-body blockquote{border-left:3px solid #aab79a;padding:2px 0 2px 15px;margin:16px 0;color:#606c56}
+.answer-body blockquote p:last-child{margin-bottom:0}
+.answer-body a{color:var(--green);text-decoration:underline;text-underline-offset:3px}
+.answer-body hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+.answer-body code{font-family:ui-monospace,SFMono-Regular,Consolas,'Liberation Mono',monospace;font-size:.92em}
+.answer-body :not(pre)>code{padding:2px 5px;background:#edf0e5;border:1px solid #dfe4d5;border-radius:4px;overflow-wrap:anywhere}
+.answer-body .code-block{border:1px solid #d9dfcf;border-radius:7px;background:#f0f2e9;margin:15px 0;overflow:hidden;max-width:100%}
+.answer-body .code-language{padding:6px 12px;font-size:9px;font-weight:600;letter-spacing:.8px;color:#6b775f;border-bottom:1px solid #d9dfcf;background:#e9eddf}
+.answer-body pre{margin:0;padding:13px 14px;overflow-x:auto;white-space:pre;line-height:1.7;tab-size:4}
+.answer-body pre code{display:block;font-size:12px;white-space:pre;overflow-wrap:normal;color:#354031}
+.answer-body .hljs-keyword,.answer-body .hljs-meta{color:#694b8a;font-weight:600}
+.answer-body .hljs-type,.answer-body .hljs-built_in,.answer-body .hljs-title{color:#2d655e}
+.answer-body .hljs-string,.answer-body .hljs-char,.answer-body .hljs-regexp{color:#496a34}
+.answer-body .hljs-number,.answer-body .hljs-literal{color:#9a5026}
+.answer-body .hljs-comment{color:#6f7865;font-style:italic}
+.answer-body .answer-table{max-width:100%;overflow-x:auto;margin:15px 0}
+.answer-body table{border-collapse:collapse;min-width:100%;font-size:12px;text-align:left}
+.answer-body th,.answer-body td{padding:9px 12px;border:1px solid #dce0d3;vertical-align:top}
+.answer-body th{background:#edf0e5;font-weight:600}
+.answer-body .katex{font-size:1.1em}
+.answer-body p>.katex{display:inline-block;max-width:100%;overflow-x:auto;overflow-y:hidden;vertical-align:middle;padding:2px 0}
+.answer-body .katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;padding:5px 0;margin:16px 0}
+.answer-body .katex-error{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:720px){.answer-body{font-size:13px}.answer-body pre{padding:11px 12px}.answer-body pre code{font-size:11px}.answer-body th,.answer-body td{padding:8px 10px}}

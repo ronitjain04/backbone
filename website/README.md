@@ -6,15 +6,18 @@ A responsive introduction and live study chat, with source excerpts. The Python 
 
 The website and Render API are deployed and connected to Groq using GPT-OSS 20B. A complete live answer with source excerpts was verified through the published website. The website is public at [backbone-study-ronit.ronit-jain.chatgpt.site](https://backbone-study-ronit.ronit-jain.chatgpt.site). The configured readiness endpoint checks loaded resources and model settings, not provider availability or remaining quota; inference remains subject to provider limits.
 
+Assistant answers render Markdown, syntax-highlighted C/C++ and LC-3 code, and inline/display TeX equations. The renderer disables raw HTML, sanitizes its output, and keeps questions and retrieved excerpts literal. Invalid equations remain readable. Browser dependencies, KaTeX styles, and WOFF2 math fonts are bundled and served from the same origin; code blocks, tables, and display equations scroll within the answer. KaTeX layout requires inline style attributes; inline scripts remain disallowed by CSP.
+
 The website has CS 2110 and CS 2200 tabs with separate local chat histories and drafts. Every question carries a validated course ID, and each course has its own retriever. An unavailable course returns an explicit error instead of using another course’s material. Switching tabs during an answer keeps that response in its original course.
 
 The CS 2200 starter collection contains six **original demo notes**, not Georgia Tech slides or textbook excerpts. Production private course data is not included. The default demo uses lightweight lexical retrieval; optional `RETRIEVAL_MODE=semantic` uses normalized sentence embeddings and a FAISS inner-product index. The previous sibling app's API contract and grounding approach are preserved; this deployment uses explicit JSONL documents rather than runtime pickle loading.
 
 ## Local preview
 
-From the repository root:
+Node.js 24 is the tested website build/preview baseline. From the repository root:
 
 ```sh
+npm --prefix website/site ci
 node website/site/dev.mjs
 ```
 
@@ -93,7 +96,7 @@ The course picker alone does not install course data on the server.
 
 ## Publish the website
 
-`site/.openai/hosting.json` stores the exact Sites identity. `node website/site/build.mjs` generates a self-contained Worker at `site/dist/server/index.js`. Package and publish using the Sites source workflow; the website has no npm runtime dependencies. Publish only `website/site`, not this whole repository. New Sites are private by default; wider tester access must be configured with supported Sites controls.
+`site/.openai/hosting.json` stores the exact Sites identity. `node website/site/build.mjs` generates a self-contained Worker at `site/dist/server/index.js`. Package and publish using the Sites source workflow; browser libraries and math fonts are bundled locally; the deployed Worker has no Node.js runtime dependency. Publish only `website/site`, not this whole repository. New Sites are private by default; wider tester access must be configured with supported Sites controls.
 
 ## Verify
 
