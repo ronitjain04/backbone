@@ -73,3 +73,14 @@ def test_missing_service_token_fails_closed_with_configured_model(monkeypatch):
     with TestClient(create_app(retriever=Retriever(), model=Model())) as c:
         assert c.get('/ready').status_code == 503
         assert c.post('/api/chat', json={'query':'data hazards'}).status_code == 503
+
+def test_truncated_provider_answer_is_explicitly_marked():
+    async def handler(req):
+        return httpx.Response(200,json={'choices':[{'finish_reason':'length','message':{'content':'A pipeline can cause an'}}]})
+    import asyncio
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as transport:
+            model=InferenceClient('https://model.example/v1','test-model','secret',transport)
+            answer=await model.answer('hazards',Retriever().search('hazards'))
+            assert 'output limit' in answer.lower()
+    asyncio.run(run())
