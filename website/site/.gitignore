@@ -1,0 +1,7 @@
+dist/
+.env
+.env.*
+!.env.example
+.openai/.local/
+.site-workflow/
+node_modules/

@@ -12,3 +12,9 @@ __pycache__/
 *.pptx
 *.pkl
 *.index
+
+# Live website build and local environments
+website/.venv/
+website/site/dist/
+website/site/.openai/.local/
+website/private-data/

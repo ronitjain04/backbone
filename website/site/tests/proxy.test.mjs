@@ -1,0 +1,22 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {handleRequest} from '../proxy.mjs';
+const request = (query='hazards') => new Request('https://backbone.example/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
+test('missing upstream is explicitly unavailable', async()=>{assert.equal((await handleRequest(request(), {})).status,503)});
+test('rejects invalid questions before forwarding', async()=>{for(const q of ['', ' '.repeat(4), 'a'.repeat(2001)]) assert.equal((await handleRequest(request(q),{})).status,400)});
+test('forwards only to configured upstream and keeps auth server side',async()=>{
+ const response=await handleRequest(request(),{BACKEND_URL:'https://api.example',BACKEND_TOKEN:'private'}, async(url,options)=>{
+ assert.equal(url,'https://api.example/api/chat');assert.equal(options.headers.Authorization,'Bearer private');
+ return Response.json({answer:'A hazard [1]',citations:[{source:'Notes',details:'Hazards'}],context:[]});
+ });assert.equal(response.status,200);assert.equal((await response.json()).answer,'A hazard [1]');
+});
+test('sanitizes failures and malformed upstream responses',async()=>{
+ for (const response of [new Response('private stack trace',{status:500}),Response.json({wrong:true})]) {
+ const r=await handleRequest(request(),{BACKEND_URL:'https://api.example'},async()=>response);
+ assert.equal(r.status,502);assert.ok(!(await r.text()).includes('private stack trace'));
+ }
+});
+test('network errors preserve actionable response',async()=>{assert.equal((await handleRequest(request(),{BACKEND_URL:'https://api.example'},async()=>{throw new Error('private')})).status,502)});
+test('chunked oversized body is rejected without trusting content length',async()=>{const r=new Request('https://backbone.example/api/chat',{method:'POST',body:'x'.repeat(10001)});assert.equal((await handleRequest(r,{})).status,413)});
+test('invalid JSON and wrong methods are rejected',async()=>{assert.equal((await handleRequest(new Request('https://backbone.example/api/chat',{method:'POST',body:'{'}),{})).status,400);assert.equal((await handleRequest(new Request('https://backbone.example/api/chat'),{})).status,405)});
+test('status reflects service configuration without exposing credentials',async()=>{const request=new Request('https://backbone.example/api/status');assert.deepEqual(await(await handleRequest(request,{})).json(),{ready:false});const r=await handleRequest(request,{BACKEND_URL:'https://api.example'},async()=>new Response('',{status:200}));assert.deepEqual(await r.json(),{ready:true})});
