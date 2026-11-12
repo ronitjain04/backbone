@@ -1,0 +1,3 @@
+# Optional local import tools; not installed in the public API image.
+pypdf==6.21.4
+pypdfium2==5.14.0

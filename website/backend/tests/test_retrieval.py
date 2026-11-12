@@ -21,3 +21,12 @@ def test_empty_or_invalid_corpus_is_not_ready(tmp_path):
     with pytest.raises(ValueError): Retriever(p)
     p.write_text(json.dumps({'text':'hazards'}))
     with pytest.raises(ValueError): Retriever(p)
+
+def test_private_secret_file_loads_the_same_sources_as_plain_jsonl(corpus, tmp_path):
+    import base64
+    import gzip
+    packed=tmp_path/'notes.jsonl.gz.b64'
+    packed.write_bytes(base64.b64encode(gzip.compress(corpus.read_bytes())))
+    assert Retriever(packed).search('load hazard') == Retriever(corpus).search('load hazard')
+    packed.write_text('not base64')
+    with pytest.raises(ValueError): Retriever(packed)
