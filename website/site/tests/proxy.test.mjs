@@ -20,3 +20,11 @@ test('network errors preserve actionable response',async()=>{assert.equal((await
 test('chunked oversized body is rejected without trusting content length',async()=>{const r=new Request('https://backbone.example/api/chat',{method:'POST',body:'x'.repeat(10001)});assert.equal((await handleRequest(r,{})).status,413)});
 test('invalid JSON and wrong methods are rejected',async()=>{assert.equal((await handleRequest(new Request('https://backbone.example/api/chat',{method:'POST',body:'{'}),{})).status,400);assert.equal((await handleRequest(new Request('https://backbone.example/api/chat'),{})).status,405)});
 test('status reflects service configuration without exposing credentials',async()=>{const request=new Request('https://backbone.example/api/status');assert.deepEqual(await(await handleRequest(request,{})).json(),{ready:false});const r=await handleRequest(request,{BACKEND_URL:'https://api.example'},async()=>new Response('',{status:200}));assert.deepEqual(await r.json(),{ready:true})});
+test('supports the edge runtime without following upstream redirects',async()=>{
+ const edgeFetch=async(url,options)=>{if(options.redirect==='error')throw new TypeError('Invalid redirect value');return Response.json({answer:'A grounded explanation',citations:[],context:[]})};
+ const status=await handleRequest(new Request('https://backbone.example/api/status'),{BACKEND_URL:'https://api.example'},edgeFetch);
+ assert.deepEqual(await status.json(),{ready:true});
+ assert.equal((await handleRequest(request(),{BACKEND_URL:'https://api.example'},edgeFetch)).status,200);
+ const redirect=async(url,options)=>{assert.equal(options.redirect,'manual');return new Response(null,{status:302,headers:{Location:'https://other.example'}})};
+ assert.equal((await handleRequest(request(),{BACKEND_URL:'https://api.example',BACKEND_TOKEN:'private'},redirect)).status,502);
+});
