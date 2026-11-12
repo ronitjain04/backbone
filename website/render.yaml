@@ -1,0 +1,26 @@
+# Place this file in Render's Blueprint Path field: website/render.yaml
+# Official schema: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: backbone-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./website/backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /ready
+    autoDeployTrigger: off
+    envVars:
+      - key: CORPUS_PATH
+        value: /app/website/backend/data/demo.jsonl
+      - key: RETRIEVAL_MODE
+        value: lexical
+      - key: MODEL_PROVIDER
+        value: compatible
+      - key: MODEL_BASE_URL
+        sync: false
+      - key: MODEL_NAME
+        sync: false
+      - key: MODEL_API_KEY
+        sync: false
+      - key: BACKEND_TOKEN
+        generateValue: true

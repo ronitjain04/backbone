@@ -1,0 +1,19 @@
+const form=document.querySelector('#question-form'),input=document.querySelector('#question'),messages=document.querySelector('#messages'),send=document.querySelector('#send'),error=document.querySelector('#error'),welcome=document.querySelector('#welcome');
+let busy=false;
+function count(){document.querySelector('#count').textContent=`${input.value.length} / 2000`}
+function message(role,text){const article=document.createElement('article');article.className='message '+role;const label=document.createElement('div');label.className='message-label';label.textContent=role==='user'?'YOU':'BACKBONE';const p=document.createElement('p');p.textContent=text;article.append(label,p);messages.append(article);messages.scrollTop=messages.scrollHeight;return article}
+async function status(){const el=document.querySelector('#status');try{const r=await fetch('/api/status');const d=await r.json();el.replaceChildren();const dot=document.createElement('span');dot.className='dot';el.append(dot,document.createTextNode(d.ready?'Live service configured':'Live service not connected'));el.classList.toggle('online',Boolean(d.ready))}catch{el.textContent='Live service not connected'}}
+input.addEventListener('input',count);
+input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();form.requestSubmit()}});
+document.querySelectorAll('[data-question]').forEach(button=>button.addEventListener('click',()=>{if(busy)return;input.value=button.dataset.question;count();input.focus()}));
+document.querySelector('#clear').addEventListener('click',()=>{if(busy)return;messages.replaceChildren(welcome);welcome.hidden=false;input.value='';error.hidden=true;count();input.focus()});
+form.addEventListener('submit',async e=>{
+ e.preventDefault();const query=input.value.trim();if(busy||!query)return;busy=true;send.disabled=true;input.readOnly=true;document.querySelector('#clear').disabled=true;error.hidden=true;welcome.hidden=true;
+ const user=message('user',query),loading=message('assistant','Finding relevant notes and building an explanation…');loading.classList.add('loading');messages.setAttribute('aria-busy','true');
+ try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query}),signal:AbortSignal.timeout(75000)});const data=await r.json();if(!r.ok)throw Error(typeof data.detail==='string'?data.detail:'The answer service is unavailable. Please try again.');if(typeof data.answer!=='string')throw Error('The service returned an invalid answer. Please try again.');loading.remove();const answer=message('assistant',data.answer);
+ if(data.citations?.length){const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`Explore ${data.citations.length} retrieved source${data.citations.length===1?'':'s'}`;details.append(summary);data.citations.forEach((citation,i)=>{const source=document.createElement('div');source.className='source';const title=document.createElement('b');title.textContent=`[${i+1}] ${citation.source}${citation.details?' · '+citation.details:''}`;source.append(title);const text=document.createElement('p');text.textContent=data.context?.[i]?.text||'No excerpt available.';source.append(text);details.append(source)});answer.append(details)}
+ input.value='';count();messages.scrollTop=messages.scrollHeight;
+ }catch(err){loading.remove();user.remove();error.textContent=err.name==='TimeoutError'?'The model took too long. Your question is saved; try again.':err.message||'Connection failed. Your question is saved; try again.';error.hidden=false;if(!messages.querySelector('.message'))welcome.hidden=false;
+ }finally{busy=false;send.disabled=false;input.readOnly=false;document.querySelector('#clear').disabled=false;messages.setAttribute('aria-busy','false');input.focus()}
+});
+status();
