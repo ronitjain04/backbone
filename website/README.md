@@ -4,7 +4,7 @@ A responsive introduction and live study chat, with source excerpts. The Python 
 
 ## Current state
 
-The website, API, tests, original demo corpus, Dockerfile, and Render Blueprint are implemented. A hosted API and inference endpoint must be configured before live answers will work. The website explicitly displays this state. The configured readiness endpoint checks loaded resources and model settings, not model-provider reachability; verify an actual chat request before sharing a live demo.
+The website and Render API are deployed and connected to Groq using GPT-OSS 20B. A complete live answer with source excerpts was verified through the published website. The website is public at [backbone-study-ronit.ronit-jain.chatgpt.site](https://backbone-study-ronit.ronit-jain.chatgpt.site). The configured readiness endpoint checks loaded resources and model settings, not provider availability or remaining quota; inference remains subject to provider limits.
 
 The starter collection contains six **original demo notes**, not Georgia Tech slides or textbook excerpts. Production private course data is not included. The default demo uses lightweight lexical retrieval; optional `RETRIEVAL_MODE=semantic` uses normalized sentence embeddings and a FAISS inner-product index. The previous sibling app's API contract and grounding approach are preserved; this deployment uses explicit JSONL documents rather than runtime pickle loading.
 

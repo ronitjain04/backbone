@@ -2,8 +2,15 @@
 
 An AI tutoring project that retrieves course material to help answer student questions.
 
+## Live demo
+
+**[Try Backbone](https://backbone-study-ronit.ronit-jain.chatgpt.site)** — ask a computer-systems question and explore the supporting sources. The public demo uses Groq and six original study notes; it does not include official course slides or textbooks. Free hosting and model limits apply.
+
+See the [website and backend guide](website/README.md) for setup, tests, and deployment.
+
 ## Projects
 
+- **[website](website/)**: Public introduction and live chat demo, with a deployable Python retrieval backend.
 - **[backbone-ui](backbone-ui/)**: Web interface and FastAPI/Streamlit application, retrieval processing, and local Ollama integration. See its [setup instructions](backbone-ui/README.md).
 - **[backbone-i2p](backbone-i2p/)**: Backend project scaffold, course configuration schemas, and ingestion manifests.
 
@@ -11,7 +18,7 @@ Both projects are collected here with their commit histories and contributor att
 
 ## Getting started
 
-Start with the [UI setup guide](backbone-ui/README.md). It covers Python dependencies, Ollama, and running the FastAPI or Streamlit interface.
+For the public demo, start with the [website guide](website/README.md). For the original application, use the [UI setup guide](backbone-ui/README.md). It covers Python dependencies, Ollama, and running the FastAPI or Streamlit interface.
 
 The backend scaffold has its own [Python project configuration](backbone-i2p/pyproject.toml); it does not yet provide a complete standalone server.
 
