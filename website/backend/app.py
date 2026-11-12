@@ -9,12 +9,19 @@ from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 from .inference import InferenceClient
 from .retrieval import Retriever
+from .conversation import ChatMessage, MAX_HISTORY_MESSAGES, validate_history
 
 logger=logging.getLogger(__name__)
 CourseId = Literal['cs2110', 'cs2200']
+REQUEST_TIMEOUT_SECONDS = 60
 class ChatRequest(BaseModel):
     query: str = Field(min_length=1,max_length=2000)
     course: CourseId = 'cs2200'
+    history: list[ChatMessage] = Field(default_factory=list, max_length=MAX_HISTORY_MESSAGES)
+    @field_validator('history')
+    @classmethod
+    def valid_history(cls, messages):
+        return validate_history(messages)
     @field_validator('query')
     @classmethod
     def nonblank(cls,value):
@@ -66,17 +73,20 @@ def create_app(retriever=None, model=None, service_token=None, rate_limit=10, al
         if len(calls)>=rate_limit: raise HTTPException(429,'Backbone is busy. Please try again in a minute.',headers={'Retry-After':'60'})
         calls.append(now)
         try:
-            chunks=await asyncio.to_thread(courses[body.course].search,body.query)
-            if not chunks:
-                return {'course':body.course,'answer':"I don't have enough relevant information in this course's available material to answer that. Try another question about this course.",'citations':[],'context':[]}
-            answer=await state['model'].answer(body.query,chunks)
+            async with asyncio.timeout(REQUEST_TIMEOUT_SECONDS):
+                history = [message.model_dump() for message in body.history]
+                retrieval_query = await state['model'].rewrite_query(body.query, history) if history else body.query
+                chunks=await asyncio.to_thread(courses[body.course].search,retrieval_query)
+                if not chunks:
+                    return {'course':body.course,'supports_history':True,'answer':"I don't have enough relevant information in this course's available material to answer that. Try another question about this course.",'citations':[],'context':[]}
+                answer=await state['model'].answer(body.query,chunks,history=history)
         except asyncio.CancelledError: raise
         except Exception as exc:
             import httpx
             if isinstance(exc,(httpx.TimeoutException,TimeoutError)): raise HTTPException(504,'The model took too long. Please try again.') from None
             logger.error('Retrieval or model request failed (%s)',type(exc).__name__)
             raise HTTPException(502,'The answer service is unavailable. Please try again shortly.') from None
-        return {'course':body.course,'answer':answer,'citations':[{'source':c['source'],'details':c.get('details','')} for c in chunks],'context':chunks}
+        return {'course':body.course,'supports_history':True,'answer':answer,'citations':[{'source':c['source'],'details':c.get('details','')} for c in chunks],'context':chunks}
     return app
 
 app=create_app()

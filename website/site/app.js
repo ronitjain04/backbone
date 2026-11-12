@@ -1,4 +1,5 @@
 import {renderAnswer} from './answer-renderer.mjs';
+import {appendExchange} from './conversation.mjs';
 
 const form=document.querySelector('#question-form'),input=document.querySelector('#question'),messages=document.querySelector('#messages'),send=document.querySelector('#send'),error=document.querySelector('#error'),welcome=document.querySelector('#welcome'),clear=document.querySelector('#clear');
 const tabs=[...document.querySelectorAll('[data-course]')];
@@ -7,7 +8,7 @@ const courses={
  cs2110:{name:'CS 2110',title:'Computer organization & programming',subtitle:'CS 2110 · Fall 2026',source:'Textbook & lab material',description:'From transistors and binary to the LC-3 and C. Explanations use the selected course’s available material.',topics:['Digital logic','LC-3','C programming'],questions:['Why can the bus only hold one value?','What is the addressability of memory?','What is the purpose of using typedef before instantiating a struct?']},
  cs2200:{name:'CS 2200',title:'Computer systems & networks',subtitle:'CS 2200 topics · demo collection',source:'Original demo notes',description:'A small set of original notes on pipelining, caches, and virtual memory. These are illustrative study notes, not official course materials.',topics:['Pipelining','Memory','Caches'],questions:['Why do data hazards happen in a pipeline?','How are a cache and virtual memory different?','When does forwarding fail to resolve a hazard?']}
 };
-const states=Object.fromEntries(Object.keys(courses).map(id=>[id,{nodes:[],draft:'',error:'',busy:false,ready:null}]));
+const states=Object.fromEntries(Object.keys(courses).map(id=>[id,{nodes:[],history:[],draft:'',error:'',busy:false,ready:null}]));
 let selected='cs2200';
 function count(){document.querySelector('#count').textContent=`${input.value.length} / 2000`}
 function showStatus(){
@@ -68,13 +69,13 @@ tabs.forEach((tab,index)=>{
   e.preventDefault();selectCourse(tabs[next].dataset.course);tabs[next].focus();
  });
 });
-clear.addEventListener('click',()=>{const state=states[selected];if(state.busy)return;state.nodes=[];state.draft='';state.error='';renderChat();input.focus()});
+clear.addEventListener('click',()=>{const state=states[selected];if(state.busy)return;state.nodes=[];state.history=[];state.draft='';state.error='';renderChat();input.focus()});
 form.addEventListener('submit',async e=>{
  e.preventDefault();const course=selected,state=states[course],query=input.value.trim();if(state.busy||!query)return;
  state.draft=input.value;state.busy=true;state.error='';
  const user=message(state,'user',query),loading=message(state,'assistant','Finding relevant notes and building an explanation…');loading.classList.add('loading');renderChat();
  try{
-  const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,course}),signal:AbortSignal.timeout(75000)});
+  const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,course,history:state.history}),signal:AbortSignal.timeout(75000)});
   const data=await r.json();
   if(!r.ok)throw Error(typeof data.detail==='string'?data.detail:'The answer service is unavailable. Please try again.');
   if(typeof data.answer!=='string')throw Error('The service returned an invalid answer. Please try again.');
@@ -83,6 +84,7 @@ form.addEventListener('submit',async e=>{
    const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`Explore ${data.citations.length} retrieved source${data.citations.length===1?'':'s'}`;details.append(summary);
    data.citations.forEach((citation,i)=>{const source=document.createElement('div');source.className='source';const title=document.createElement('b');title.textContent=`[${i+1}] ${citation.source}${citation.details?' · '+citation.details:''}`;source.append(title);const text=document.createElement('p');text.textContent=data.context?.[i]?.text||'No excerpt available.';source.append(text);details.append(source)});answer.append(details);
   }
+  state.history=appendExchange(state.history,query,data.answer);
   state.draft='';
  }catch(err){
   state.nodes=state.nodes.filter(node=>node!==loading&&node!==user);
