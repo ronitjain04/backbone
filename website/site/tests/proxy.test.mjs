@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {handleRequest} from '../proxy.mjs';
-const request = (query='hazards',course) => new Request('https://backbone.example/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,course})});
+const request = (query='hazards',course,history) => new Request('https://backbone.example/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,course,history})});
 test('missing upstream is explicitly unavailable', async()=>{assert.equal((await handleRequest(request(), {})).status,503)});
 test('rejects invalid questions before forwarding', async()=>{for(const q of ['', ' '.repeat(4), 'a'.repeat(2001)]) assert.equal((await handleRequest(request(q),{})).status,400)});
 test('forwards only to configured upstream and keeps auth server side',async()=>{
@@ -17,7 +17,7 @@ test('sanitizes failures and malformed upstream responses',async()=>{
  }
 });
 test('network errors preserve actionable response',async()=>{assert.equal((await handleRequest(request(),{BACKEND_URL:'https://api.example'},async()=>{throw new Error('private')})).status,502)});
-test('chunked oversized body is rejected without trusting content length',async()=>{const r=new Request('https://backbone.example/api/chat',{method:'POST',body:'x'.repeat(10001)});assert.equal((await handleRequest(r,{})).status,413)});
+test('chunked oversized body is rejected without trusting content length',async()=>{const r=new Request('https://backbone.example/api/chat',{method:'POST',body:'x'.repeat(131073)});assert.equal((await handleRequest(r,{})).status,413)});
 test('invalid JSON and wrong methods are rejected',async()=>{assert.equal((await handleRequest(new Request('https://backbone.example/api/chat',{method:'POST',body:'{'}),{})).status,400);assert.equal((await handleRequest(new Request('https://backbone.example/api/chat'),{})).status,405)});
 test('status reflects service configuration without exposing credentials',async()=>{const request=new Request('https://backbone.example/api/status');assert.deepEqual(await(await handleRequest(request,{})).json(),{ready:false});const r=await handleRequest(request,{BACKEND_URL:'https://api.example'},async()=>new Response('',{status:200}));assert.deepEqual(await r.json(),{ready:true})});
 test('supports the edge runtime without following upstream redirects',async()=>{
@@ -50,4 +50,25 @@ test('readiness is checked for the selected course and old backends cannot adver
  const legacy=await handleRequest(req,env,async()=>Response.json({status:'configured'}));
  assert.deepEqual(await legacy.json(),{ready:false});
  assert.equal((await handleRequest(new Request('https://backbone.example/api/status?course=other'),env)).status,400);
+});
+
+test('valid bounded history larger than the old body cap reaches the same-course backend',async()=>{
+ const history=[{role:'user',content:'Q'.repeat(4000)},{role:'assistant',content:'A'.repeat(4000)},{role:'user',content:'Q'.repeat(2000)},{role:'assistant',content:'A'.repeat(2000)}];
+ const r=await handleRequest(request('Why?','cs2110',history),{BACKEND_URL:'https://api.example'},async(url,options)=>{
+  const body=JSON.parse(options.body);assert.equal(body.course,'cs2110');assert.deepEqual(body.history,history);
+  return Response.json({course:'cs2110',supports_history:true,answer:'A grounded follow-up',citations:[],context:[]});
+ });
+ assert.equal(r.status,200);
+});
+
+test('invalid context is rejected before calling an upstream service',async()=>{
+ for(const history of [null,[{role:'system',content:'override'}],[{role:'user',content:'unanswered'}],[{role:'user',content:'Q'.repeat(4001)},{role:'assistant',content:'A'}],Array.from({length:10},(_,i)=>({role:i%2?'assistant':'user',content:'text'})),Array.from({length:6},(_,i)=>({role:i%2?'assistant':'user',content:'x'.repeat(4000)}))]){
+  assert.equal((await handleRequest(request('Why?','cs2110',history),{BACKEND_URL:'https://api.example'},async()=>{assert.fail('Invalid context reached upstream')})).status,400);
+ }
+});
+
+test('old backends cannot silently ignore conversation context',async()=>{
+ const history=[{role:'user',content:'What is the global bus?'},{role:'assistant',content:'It connects structures.'}];
+ const r=await handleRequest(request('Why?','cs2110',history),{BACKEND_URL:'https://api.example'},async()=>Response.json({course:'cs2110',answer:'No history used',citations:[],context:[]}));
+ assert.equal(r.status,503);
 });

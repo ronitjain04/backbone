@@ -40,7 +40,7 @@ export RETRIEVAL_MODE=lexical
 website/.venv/bin/uvicorn website.backend.app:app --host 127.0.0.1 --port 8000
 ```
 
-For the website preview, set `BACKEND_URL=http://127.0.0.1:8000` and the same `BACKEND_TOKEN` as the API, then restart `node website/site/dev.mjs`. `/health` checks process liveness; `/ready` returns 503 until the corpus and model settings load and a backend token is configured. Ten chat attempts per minute per backend process limit inference traffic. Use one worker for this process-wide budget; multi-instance deployments need a shared limit. No chat history is stored server-side. Each request is independent.
+For the website preview, set `BACKEND_URL=http://127.0.0.1:8000` and the same `BACKEND_TOKEN` as the API, then restart `node website/site/dev.mjs`. `/health` checks process liveness; `/ready` returns 503 until the corpus and model settings load and a backend token is configured. Ten chat attempts per minute per backend process limit inference traffic. Use one worker for this process-wide budget; multi-instance deployments need a shared limit. No conversation history is stored server-side. The browser sends bounded recent context for the selected course with each request; refreshing or clearing that course’s chat resets its context.
 
 ## Host the backend
 
@@ -55,6 +55,39 @@ Connect a sanitized repository to Render and set the Blueprint Path to `website/
 Keep `MODEL_API_KEY` and `BACKEND_TOKEN` in the host's secret manager. Configure `BACKEND_URL` and the matching `BACKEND_TOKEN` as Sites runtime environment values. Keep the backend behind TLS and the token gate. The API deliberately exposes no cross-origin browser access; browsers use the same-origin website proxy.
 
 For semantic retrieval, install `backend/requirements-semantic.txt` in a suitable image and set `RETRIEVAL_MODE=semantic`. This requires more memory and a downloaded embedding model and has not been exercised by the lightweight test suite. For private corpora, mount UTF-8 JSONL files outside the source checkout and set `CS2110_CORPUS_PATH` and/or `CS2200_CORPUS_PATH`. The legacy `CORPUS_PATH` remains a CS 2200 fallback. Each course loads independently, so a missing CS 2110 file does not take CS 2200 offline. `/ready?course=cs2110` and `/ready?course=cs2200` report per-course configuration; `/ready` succeeds when at least one course is configured. Chat bodies accept `{ "query": "…", "course": "cs2110" }` (default course: `cs2200`). Each line must have nonempty `text` and `source` strings and an optional `details` string. Split excerpts into chunks under 10,000 characters. Do not publish lecture slides, textbooks, extracted course chunks, or indexes in the frontend or source repository.
+
+## Follow-up conversations
+
+Each course keeps up to four completed exchanges in browser memory. Follow-ups
+such as “why?” or “show another example” include only that course's recent
+user/assistant messages. Clear chat resets the selected course's context; the
+other course is unaffected. Failed requests and pending answers are not added.
+Nothing is persisted across refreshes or stored in a backend session database.
+
+Chat requests accept an optional `history` array of `{role, content}` messages.
+Only alternating, completed user/assistant pairs are allowed: at most 8 messages,
+4,000 characters per message and 16,000 total context characters. The browser
+truncates long messages with a marker and drops the oldest complete pairs to fit.
+The Worker proxy and API validate history; the proxy and dev server cap encoded
+request bodies at 128 KiB. Existing requests without history remain valid.
+
+For a request with history, the model first rewrites the latest question into a
+standalone retrieval question, resolving references while preserving topic
+changes. Retrieval still searches only the selected course. The answering model
+receives the original question, recent chat and freshly retrieved excerpts; it is
+instructed to use only the current excerpts as evidence and to refresh citations.
+A lack of relevant current sources produces the existing grounding refusal.
+Native Ollama and compatible HTTP providers both support this flow. A follow-up
+uses an additional model call for rewriting, so it can take longer and consume
+more provider quota. Rewrite, retrieval and answering share a 60-second deadline.
+Malformed/truncated rewrites and provider failures fail closed with a retryable
+service error, preserving the student's draft and previous completed history.
+
+Deploy the updated backend before the updated website: API chat responses expose
+`supports_history: true`. The proxy refuses follow-ups if an older upstream does
+not advertise that capability, instead of silently discarding context. Model
+provider retention settings also apply to the recent messages sent for rewriting
+and answering; keep provider credentials server-side.
 
 ## Import CS 2110 privately
 

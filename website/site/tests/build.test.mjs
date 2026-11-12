@@ -22,4 +22,15 @@ test('production Worker serves the bundled renderer, styles and local math fonts
  const csp=(await get('/')).headers.get('Content-Security-Policy');
  assert.ok(csp.includes("script-src 'self'"));
  assert.ok(!csp.includes("script-src 'self' 'unsafe-inline'"));
+ const originalFetch=globalThis.fetch;
+ try{
+  globalThis.fetch=async(url,options)=>{
+   assert.equal(url,'https://api.example/api/chat');
+   assert.deepEqual(JSON.parse(options.body).history,[{role:'user',content:'Global bus?'},{role:'assistant',content:'One supplier.'}]);
+   return Response.json({course:'cs2110',supports_history:true,answer:'A grounded follow-up',citations:[],context:[]});
+  };
+  const response=await worker.fetch(new Request('https://backbone.example/api/chat',{method:'POST',body:JSON.stringify({query:'Why?',course:'cs2110',history:[{role:'user',content:' Global bus? '},{role:'assistant',content:'One supplier.'}]})}),{BACKEND_URL:'https://api.example'});
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).answer,'A grounded follow-up');
+ }finally{globalThis.fetch=originalFetch}
 });
