@@ -9,7 +9,7 @@ class Retriever:
         return [{'text': 'A data hazard occurs when an instruction needs a result that is not yet available.', 'source': 'Demo notes', 'details': 'Data hazards'}]
 
 class Model:
-    async def answer(self, query, chunks):
+    async def answer(self, query, chunks, history=None):
         return 'A data hazard is a dependency on an unavailable result. [1]'
 
 def client(**kwargs):
@@ -41,7 +41,7 @@ def test_low_grounding_returns_no_fabricated_citations():
 
 def test_provider_failure_is_sanitized():
     class Broken:
-        async def answer(self, query, chunks): raise httpx.ReadTimeout('secret-provider-detail')
+        async def answer(self, query, chunks, history=None): raise httpx.ReadTimeout('secret-provider-detail')
     with TestClient(create_app(retriever=Retriever(), model=Broken(), allow_unauthenticated=True)) as c:
         r = c.post('/api/chat', json={'query': 'data hazards'})
         assert r.status_code == 504

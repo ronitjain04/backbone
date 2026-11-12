@@ -42,7 +42,7 @@ test('switching courses isolates drafts, pending responses and clearing',async()
  try{
   h.input.value='2200 draft';h.select('cs2110');assert.equal(h.input.value,'');
   h.input.value='2110 question';h.submit();
-  assert.deepEqual(h.sent[0],{query:'2110 question',course:'cs2110'});
+  assert.deepEqual(h.sent[0],{query:'2110 question',course:'cs2110',history:[]});
   h.select('cs2200');assert.equal(h.input.value,'2200 draft');
   assert.equal(h.doc.querySelector('#send').disabled,false);
   h.pending.get('cs2110')({ok:true,json:async()=>({course:'cs2110',answer:'LC-3 explanation',citations:[],context:[]})});await tick();
@@ -66,5 +66,35 @@ test('formats assistant replies while keeping questions and source excerpts lite
   assert.equal(h.doc.querySelector('.user b'),null);
   assert.equal(h.doc.querySelector('.source p').textContent,'**Source** <img src=x onerror=alert(1)>');
   assert.equal(h.doc.querySelector('.source img, .source strong'),null);
+ }finally{h.dom.window.close()}
+});
+
+async function finish(h,course,answer){
+ h.pending.get(course)({ok:true,json:async()=>({course,supports_history:true,answer,citations:[],context:[]})});await tick();
+}
+
+test('follow-ups send only their course history and Clear chat starts a new context',async()=>{
+ const h=await harness();
+ try{
+  h.select('cs2110');h.input.value='What is the LC-3 bus?';h.submit();await finish(h,'cs2110','It connects LC-3 structures.');
+  h.input.value='Why?';h.submit();
+  assert.deepEqual(h.sent[1].history,[{role:'user',content:'What is the LC-3 bus?'},{role:'assistant',content:'It connects LC-3 structures.'}]);
+  await finish(h,'cs2110','Only one supplier drives the bus.');
+  h.select('cs2200');h.input.value='What is a cache?';h.submit();assert.deepEqual(h.sent[2].history,[]);await finish(h,'cs2200','A cache stores memory blocks.');
+  h.select('cs2110');h.doc.querySelector('#clear').click();h.input.value='Start over';h.submit();assert.deepEqual(h.sent[3].history,[]);await finish(h,'cs2110','A fresh 2110 answer.');
+  h.select('cs2200');h.input.value='Another example?';h.submit();
+  assert.deepEqual(h.sent[4].history,[{role:'user',content:'What is a cache?'},{role:'assistant',content:'A cache stores memory blocks.'}]);
+ }finally{h.dom.window.close()}
+});
+
+test('failed follow-ups and retries never enter conversation context',async()=>{
+ const h=await harness();
+ try{
+  h.input.value='What is a cache?';h.submit();await finish(h,'cs2200','It stores memory blocks.');
+  h.input.value='Why?';h.submit();
+  h.pending.get('cs2200')({ok:false,json:async()=>({detail:'Try again'})});await tick();
+  assert.equal(h.input.value,'Why?');
+  h.submit();assert.deepEqual(h.sent[2].history,h.sent[1].history);
+  assert.equal(h.sent[2].history.length,2);
  }finally{h.dom.window.close()}
 });
