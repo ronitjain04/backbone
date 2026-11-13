@@ -21,3 +21,6 @@ website/private-data/
 
 # Vercel local project identity and downloaded settings
 **/.vercel/
+
+# Explicitly built public browser assets
+website/public/

@@ -4,7 +4,7 @@ A responsive introduction and live study chat, with source excerpts. The Python 
 
 ## Current state
 
-The Cloudflare Pages website and Vercel API are deployed and connected to Groq using GPT-OSS 20B. A complete live answer with source excerpts was verified through the published website. The website is public at [backbone-study.pages.dev](https://backbone-study.pages.dev). The configured readiness endpoint checks loaded resources and model settings, not provider availability or remaining quota; inference remains subject to provider limits.
+The Vercel website and API are deployed and connected to Groq using GPT-OSS 20B. A complete live answer with source excerpts was verified through the published website. The website is public at [backbone-study.vercel.app](https://backbone-study.vercel.app). The configured readiness endpoint checks loaded resources and model settings, not provider availability or remaining quota; inference remains subject to provider limits.
 
 Assistant answers render Markdown, syntax-highlighted C/C++ and LC-3 code, and inline/display TeX equations. The renderer disables raw HTML, sanitizes its output, and keeps questions and retrieved excerpts literal. Invalid equations remain readable. Browser dependencies, KaTeX styles, and WOFF2 math fonts are bundled and served from the same origin; code blocks, tables, and display equations scroll within the answer. KaTeX layout requires inline style attributes; inline scripts remain disallowed by CSP.
 
@@ -143,13 +143,13 @@ node --check website/site/dist/server/index.js
 
 Before calling it a working live demo: check `/ready`, submit a real question through the published website, inspect its returned sources, and verify visitor access. Unit tests use a controlled model boundary and do not prove a hosted model is running. Inference requests send the question and retrieved excerpts to your configured model provider; configure its retention and privacy settings accordingly.
 
-## Vercel backend
+## Entire site on Vercel
 
-The live frontend remains [backbone-study.pages.dev](https://backbone-study.pages.dev); its server-side proxy connects to [backbone-api.vercel.app](https://backbone-api.vercel.app). The backend runs as a Python 3.12 FastAPI function on Vercel Hobby, with a 120-second function limit. Hosting and model quotas still apply. Startup and model-response latency vary; this removes Render's minute-long idle wake-up behavior rather than guaranteeing a fixed response time.
+The public site is [backbone-study.vercel.app](https://backbone-study.vercel.app). Its browser assets and API deploy together in the existing Vercel project. The website gateway calls the authenticated backend in the same process, keeping credentials out of browser code. The backend runs as a Python 3.12 FastAPI function on Vercel Hobby, with a 120-second function limit. Hosting and model quotas still apply. Startup and model-response latency vary; this removes Render's minute-long idle wake-up behavior rather than guaranteeing a fixed response time.
 
-Deploy from `website/`: `.python-version`, `pyproject.toml` and `vercel.json` configure the runtime and entrypoint. `.vercelignore` excludes frontend files, local credentials, private corpora and development environments from source uploads. Private CS 2110 data is loaded in memory through the official Vercel Blob SDK; the complete corpus has no public download route and is never committed. Vercel Blob must be **Private**, with `CS2110_CORPUS_BLOB=courses/cs2110.jsonl.gz.b64`. `BLOB_STORE_ID` identifies the connected store. Use the store's encrypted `BLOB_READ_WRITE_TOKEN` or Vercel's project-bound OIDC identity. The loader bounds encoded and expanded data at 20 MiB. The CS 2200 collection remains `CORPUS_PATH=backend/data/demo.jsonl`.
+Deploy from `website/`: `.python-version`, `pyproject.toml` and `vercel.json` configure the runtime and entrypoint. Build browser assets with `npm --prefix website/site ci` and `npm --prefix website/site run build:static` before deployment. Only the asset whitelist is written to `website/public/`, which Vercel serves through its CDN. `.vercelignore` excludes frontend source files, local credentials, private corpora and development environments from source uploads. Private CS 2110 data is loaded in memory through the official Vercel Blob SDK; the complete corpus has no public download route and is never committed. Vercel Blob must be **Private**, with `CS2110_CORPUS_BLOB=courses/cs2110.jsonl.gz.b64`. `BLOB_STORE_ID` identifies the connected store. Use the store's encrypted `BLOB_READ_WRITE_TOKEN` or Vercel's project-bound OIDC identity. The loader bounds encoded and expanded data at 20 MiB. The CS 2200 collection remains `CORPUS_PATH=backend/data/demo.jsonl`.
 
-Keep `MODEL_API_KEY` and `BACKEND_TOKEN` as production **Secret** values in Vercel. Configure `MODEL_PROVIDER`, `MODEL_BASE_URL`, `MODEL_NAME` and `RETRIEVAL_MODE` there as well. Cloudflare must have the matching encrypted `BACKEND_TOKEN` and production `BACKEND_URL=https://backbone-api.vercel.app`. Do not put these secrets in browser files. Secret environment values cannot be downloaded through `vercel env pull`; it returns placeholders for them.
+Keep `MODEL_API_KEY` and `BACKEND_TOKEN` as production **Secret** values in Vercel. Configure `MODEL_PROVIDER`, `MODEL_BASE_URL`, `MODEL_NAME` and `RETRIEVAL_MODE` there as well. The public gateway uses the existing token internally; no Cloudflare configuration is required. Do not put these secrets in browser files. Secret environment values cannot be downloaded through `vercel env pull`; it returns placeholders for them.
 
 ## Automated tests and deployment
 
@@ -159,15 +159,13 @@ Configure these repository Actions settings:
 
 | Setting | Type | Purpose |
 | --- | --- | --- |
-| `CLOUDFLARE_ACCOUNT_ID` | Variable | Account owning the existing `backbone-study` Pages project |
-| `CLOUDFLARE_API_TOKEN` | Secret | Cloudflare Pages Edit permission |
 | `VERCEL_ORG_ID` | Variable | Vercel account/team owning `backbone-api` |
-| `VERCEL_PROJECT_ID` | Variable | Existing backend project ID |
+| `VERCEL_PROJECT_ID` | Variable | Existing combined website/API project ID |
 | `VERCEL_TOKEN` | Secret | Project-scoped deployment access |
 | `BACKEND_URL` | Variable | `https://backbone-api.vercel.app` |
 
-The workflow fails before deploying if any setting is absent. The pinned Vercel CLI uploads the checked-out backend commit and waits for deployment completion. `BACKBONE_COMMIT` records the tested SHA in the function environment; `/health` must match that SHA and `/ready` must include both courses before Cloudflare receives the tested frontend artifact. Keep Vercel's independent Git auto-deployment disconnected so GitHub's test gate controls releases.
+The workflow fails before deploying if any setting is absent. The pinned Vercel CLI uploads the checked-out API and tested frontend artifact together, waits for deployment completion, and assigns the production `backbone-study.vercel.app` alias. `BACKBONE_COMMIT` records the tested SHA in the function environment; `/health` must match that SHA and `/ready` must include both courses before the public website smoke tests run. Keep Vercel's independent Git auto-deployment disconnected so GitHub's test gate controls releases.
 
 Public smoke checks request real answers for both courses plus a contextual follow-up, requiring sources and conversation support. This uses three answers and one query rewrite per deployment and does not print private source excerpts. The inference budget is per function process, not a global limit across Vercel instances; provider quotas still constrain use. Model/provider outages fail verification even if deployment succeeded. Rerun from **Actions → Test and deploy Backbone → Run workflow → main** after fixing an outage. There is no automatic rollback.
 
-The Render service is retained as a rollback target. To roll back manually, restore Cloudflare's production `BACKEND_URL` to its previous Render URL and redeploy the frontend; the service token is unchanged. New automatic backend deployments target Vercel.
+The previous Cloudflare deployment and Render service remain recoverable rollback targets. New releases use Vercel only; the old Cloudflare URL is no longer updated by CI. Use Vercel deployment rollback to restore an earlier combined release.
