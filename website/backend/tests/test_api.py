@@ -122,3 +122,9 @@ def test_course_paths_load_independently_when_one_corpus_is_invalid(tmp_path, mo
         assert c.get('/ready?course=cs2200').status_code == 503
         data = c.post('/api/chat', json={'query': 'addressability', 'course': 'cs2110'}).json()
         assert data['citations'][0]['source'] == '2110'
+
+
+def test_health_reports_deployed_commit(monkeypatch):
+    monkeypatch.setenv('RENDER_GIT_COMMIT', 'a' * 40)
+    with client() as c:
+        assert c.get('/health').json() == {'status': 'ok', 'commit': 'a' * 40}

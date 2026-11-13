@@ -142,3 +142,21 @@ node --check website/site/dist/server/index.js
 ```
 
 Before calling it a working live demo: check `/ready`, submit a real question through the published website, inspect its returned sources, and verify visitor access. Unit tests use a controlled model boundary and do not prove a hosted model is running. Inference requests send the question and retrieved excerpts to your configured model provider; configure its retention and privacy settings accordingly.
+
+## Automated tests and deployment
+
+[GitHub Actions](https://github.com/ronitjain04/backbone/actions/workflows/ci-deploy.yml) runs the frontend suite/build and backend/deployment suite on every push and pull request. Successful runs on `main` deploy production, as do manual runs on `main` and the daily **09:17 UTC** schedule. GitHub may delay scheduled runs; this is not an uptime service. Pull requests and other branches never deploy.
+
+Configure these repository Actions settings:
+
+| Setting | Type | Purpose |
+| --- | --- | --- |
+| `CLOUDFLARE_ACCOUNT_ID` | Variable | Account owning the existing `backbone-study` Pages project |
+| `CLOUDFLARE_API_TOKEN` | Secret | Account-scoped Cloudflare Pages Edit permission |
+| `RENDER_DEPLOY_HOOK_URL` | Secret | Deploy hook for the existing `backbone-demo-api` service |
+
+The workflow fails before deploying if any setting is absent. It sends the tested commit SHA to Render, waits for `/health` to report that SHA, and checks both course configurations before publishing the frontend artifact to Pages. Deployment verification then requests real answers for CS 2110 and CS 2200 and a contextual follow-up, requiring sources and conversation support. Smoke checks use the configured model quota (three answers and one query rewrite per deployment) and do not print answer text or private excerpts. Model/provider outages fail verification even if deployment succeeded; inspect host logs and rerun the workflow after resolving the outage. Render's free instance may take time to wake.
+
+Keep `BACKEND_URL` and encrypted `BACKEND_TOKEN` in the Cloudflare project's **production** runtime settings. Model credentials and private course files remain in Render. They are not needed by GitHub. Keep Render auto-deployment off so the test gate controls releases. The deploy hook's `ref` pins the exact tested commit even if Render's configured branch differs.
+
+To rerun: open **Actions → Test and deploy Backbone → Run workflow**, choose `main`. Production is [backbone-study.pages.dev](https://backbone-study.pages.dev). A run verifies deployment only when the final live-check step succeeds. It does not automatically roll back either host after a failure.
