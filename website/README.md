@@ -4,7 +4,7 @@ A responsive introduction and live study chat, with source excerpts. The Python 
 
 ## Current state
 
-The website and Render API are deployed and connected to Groq using GPT-OSS 20B. A complete live answer with source excerpts was verified through the published website. The website is public at [backbone-study-ronit.ronit-jain.chatgpt.site](https://backbone-study-ronit.ronit-jain.chatgpt.site). The configured readiness endpoint checks loaded resources and model settings, not provider availability or remaining quota; inference remains subject to provider limits.
+The website and Render API are deployed and connected to Groq using GPT-OSS 20B. A complete live answer with source excerpts was verified through the published website. The website is public at [backbone-study.pages.dev](https://backbone-study.pages.dev). The configured readiness endpoint checks loaded resources and model settings, not provider availability or remaining quota; inference remains subject to provider limits.
 
 Assistant answers render Markdown, syntax-highlighted C/C++ and LC-3 code, and inline/display TeX equations. The renderer disables raw HTML, sanitizes its output, and keeps questions and retrieved excerpts literal. Invalid equations remain readable. Browser dependencies, KaTeX styles, and WOFF2 math fonts are bundled and served from the same origin; code blocks, tables, and display equations scroll within the answer. KaTeX layout requires inline style attributes; inline scripts remain disallowed by CSP.
 
