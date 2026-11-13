@@ -54,12 +54,18 @@ def test_health_reports_explicit_vercel_release(monkeypatch):
         assert client.get('/health').json()=={'status':'ok','commit':'b'*40,'instance':'dpl_example'}
 
 
-def test_blob_download_retries_transient_failure():
+@pytest.mark.parametrize("failure", ["connection", "unavailable", "rate_limit"])
+def test_blob_download_retries_transient_failure(failure):
     import httpx
+    from vercel.blob.errors import BlobUnknownError, BlobServiceNotAvailable, BlobServiceRateLimited
     attempts=[]
     async def download(_):
         attempts.append(True)
-        if len(attempts)<3: raise httpx.ConnectError('temporary outage')
+        if len(attempts)<3:
+            if failure == 'connection':
+                raise BlobUnknownError() from httpx.ConnectError('temporary outage')
+            if failure == 'unavailable': raise BlobServiceNotAvailable()
+            raise BlobServiceRateLimited()
         return base64.b64encode(gzip.compress(b'course text'))
     async def sleep(_): pass
     assert asyncio.run(load_blob_corpus('courses/cs2110.jsonl.gz.b64',download=download,sleep=sleep))=='course text'
@@ -74,3 +80,14 @@ def test_explicit_blob_failure_prevents_partial_startup(monkeypatch):
     monkeypatch.setattr(module,'load_blob_corpus',load)
     with pytest.raises(RuntimeError,match='unavailable'):
         with TestClient(module.create_app()): pass
+
+
+def test_blob_access_errors_are_not_retried():
+    from vercel.blob.errors import BlobAccessError
+    calls=[]
+    async def download(_):
+        calls.append(True)
+        raise BlobAccessError()
+    with pytest.raises(BlobAccessError):
+        asyncio.run(load_blob_corpus('courses/cs2110.jsonl.gz.b64',download=download))
+    assert len(calls)==1
