@@ -126,5 +126,6 @@ def test_course_paths_load_independently_when_one_corpus_is_invalid(tmp_path, mo
 
 def test_health_reports_deployed_commit(monkeypatch):
     monkeypatch.setenv('RENDER_GIT_COMMIT', 'a' * 40)
+    monkeypatch.setenv('RENDER_INSTANCE_ID', 'instance-one')
     with client() as c:
-        assert c.get('/health').json() == {'status': 'ok', 'commit': 'a' * 40}
+        assert c.get('/health').json() == {'status': 'ok', 'commit': 'a' * 40, 'instance': 'instance-one'}

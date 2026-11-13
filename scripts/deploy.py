@@ -28,10 +28,11 @@ def deploy_hook_url(hook, commit):
     return urlunsplit((url.scheme, url.netloc, url.path, urlencode(query), ''))
 
 
-def wait_for_revision(base, commit, *, request=request_json, sleep=time.sleep, attempts=90):
+def wait_for_revision(base, commit, *, request=request_json, sleep=time.sleep, attempts=90, previous_instance=None):
     for attempt in range(attempts):
         try:
-            if request(base.rstrip('/') + '/health').get('commit') == commit:
+            health = request(base.rstrip('/') + '/health')
+            if health.get('commit') == commit and health.get('instance') and health['instance'] != previous_instance:
                 return
         except (OSError, ValueError):
             pass
@@ -84,9 +85,19 @@ def main():
     if sys.argv[1] == 'render':
         commit = os.environ['GITHUB_SHA']
         hook = deploy_hook_url(os.environ['RENDER_DEPLOY_HOOK_URL'], commit)
+        # Wake the existing service before taking a baseline; never log its response.
+        baseline = None
+        for attempt in range(30):
+            try:
+                baseline = request_json(os.environ['BACKEND_URL'].rstrip('/') + '/health')
+                break
+            except (OSError, ValueError):
+                if attempt < 29: time.sleep(10)
+        if baseline is None:
+            raise RuntimeError('Could not establish the backend instance before deployment')
         # Do not print the secret URL or provider response.
         request_json(hook, {})
-        wait_for_revision(os.environ['BACKEND_URL'], commit)
+        wait_for_revision(os.environ['BACKEND_URL'], commit, previous_instance=baseline.get('instance'))
         ready = request_json(os.environ['BACKEND_URL'].rstrip('/') + '/ready')
         if not {'cs2110', 'cs2200'}.issubset(ready.get('courses', [])):
             raise RuntimeError('The tested backend is missing a configured course')

@@ -55,7 +55,7 @@ def create_app(retriever=None, model=None, service_token=None, rate_limit=10, al
     app=FastAPI(title='Backbone API',lifespan=lifespan,docs_url=None,redoc_url=None)
     def configured(course): return course in courses and state['model'] is not None and (bool(token) or allow_unauthenticated)
     @app.get('/health')
-    async def health(): return {'status':'ok', 'commit':os.getenv('RENDER_GIT_COMMIT')}
+    async def health(): return {'status':'ok', 'commit':os.getenv('RENDER_GIT_COMMIT'), 'instance':os.getenv('RENDER_INSTANCE_ID')}
     @app.get('/ready')
     async def ready(course: Optional[CourseId] = None):
         available = [key for key in ('cs2110', 'cs2200') if configured(key)]
