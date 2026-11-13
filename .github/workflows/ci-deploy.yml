@@ -34,16 +34,12 @@ jobs:
         working-directory: website/site
       - run: npm run build
         working-directory: website/site
-      - name: Package Cloudflare Pages advanced-mode Worker
-        run: |
-          node --check website/site/dist/server/index.js
-          mkdir -p website/site/dist/pages
-          cp website/site/dist/server/index.js website/site/dist/pages/_worker.js
-          cp website/site/index.html website/site/dist/pages/index.html
+      - run: npm run build:static
+        working-directory: website/site
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: cloudflare-pages
-          path: website/site/dist/pages/
+          name: vercel-public
+          path: website/public/
           if-no-files-found: error
           retention-days: 7
 
@@ -71,23 +67,21 @@ jobs:
     timeout-minutes: 30
     environment:
       name: production
-      url: https://backbone-study.pages.dev
+      url: https://backbone-study.vercel.app
     env:
       BACKEND_URL: ${{ vars.BACKEND_URL }}
       VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
-      SITE_URL: https://backbone-study.pages.dev
+      SITE_URL: https://backbone-study.vercel.app
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
       - name: Check deployment configuration and current main
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          for name in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID BACKEND_URL; do
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID BACKEND_URL; do
             if [ -z "${!name}" ]; then
               echo "::error::Missing GitHub Actions setting: $name"
               exit 1
@@ -106,21 +100,15 @@ jobs:
           node-version: '24'
       - name: Install pinned Vercel CLI
         run: npm install --global vercel@65.15.0
-      - name: Deploy tested backend commit to Vercel
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: vercel-public
+          path: website/public
+      - name: Deploy tested website and backend to Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: vercel deploy --prod --yes --cwd website --env BACKBONE_COMMIT="$GITHUB_SHA"
       - name: Verify backend revision and both courses
         run: python scripts/deploy.py backend
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
-        with:
-          name: cloudflare-pages
-          path: pages
-      - name: Deploy tested frontend to Cloudflare Pages
-        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy pages --project-name=backbone-study --branch=main --commit-hash=${{ github.sha }}
       - name: Verify public site, both courses, and a follow-up
         run: python scripts/deploy.py smoke

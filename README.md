@@ -4,7 +4,7 @@ An AI tutoring project that retrieves course material to help answer student que
 
 ## Live demo
 
-**[Try Backbone](https://backbone-study.pages.dev)** — ask a computer-systems question and explore the supporting sources. The public demo uses Groq and six original study notes; it does not include official course slides or textbooks. Free hosting and model limits apply.
+**[Try Backbone](https://backbone-study.vercel.app)** — ask a computer-systems question and explore the supporting sources. The public demo uses Groq and six original study notes; it does not include official course slides or textbooks. Free hosting and model limits apply.
 
 See the [website and backend guide](website/README.md) for setup, tests, and deployment.
 
