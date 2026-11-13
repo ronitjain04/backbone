@@ -1,6 +1,7 @@
 """Read private course data into memory; never expose a public file route."""
 import asyncio
 import httpx
+import httpx2
 from vercel.blob.errors import BlobError
 import re
 from .retrieval import CORPUS_LIMIT, decode_corpus
@@ -28,9 +29,9 @@ async def load_blob_corpus(path, *, download=download_private_blob, sleep=asynci
         try:
             raw = await download(path)
             break
-        except (BlobError, httpx.TransportError, httpx.HTTPStatusError) as exc:
+        except (BlobError, httpx.TransportError, httpx2.TransportError, httpx.HTTPStatusError) as exc:
             status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else getattr(exc, 'status_code', None)
-            transient = isinstance(exc, httpx.TransportError) or isinstance(exc.__cause__, httpx.TransportError) or (status is not None and (status in (408, 429) or status >= 500))
+            transient = isinstance(exc, (httpx.TransportError, httpx2.TransportError)) or isinstance(exc.__cause__, (httpx.TransportError, httpx2.TransportError)) or (status is not None and (status in (408, 429) or status >= 500))
             if not transient or attempt == 2:
                 raise
             await sleep(2 ** attempt)

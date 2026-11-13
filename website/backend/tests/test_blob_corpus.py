@@ -56,14 +56,14 @@ def test_health_reports_explicit_vercel_release(monkeypatch):
 
 @pytest.mark.parametrize("failure", ["connection", "unavailable", "rate_limit"])
 def test_blob_download_retries_transient_failure(failure):
-    import httpx
+    import httpx2
     from vercel.blob.errors import BlobUnknownError, BlobServiceNotAvailable, BlobServiceRateLimited
     attempts=[]
     async def download(_):
         attempts.append(True)
         if len(attempts)<3:
             if failure == 'connection':
-                raise BlobUnknownError() from httpx.ConnectError('temporary outage')
+                raise BlobUnknownError() from httpx2.ConnectError('temporary outage')
             if failure == 'unavailable': raise BlobServiceNotAvailable()
             raise BlobServiceRateLimited()
         return base64.b64encode(gzip.compress(b'course text'))
