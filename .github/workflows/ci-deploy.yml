@@ -107,10 +107,7 @@ jobs:
       - name: Deploy tested website and backend to Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: |
-          vercel deploy --prod --yes --cwd website --env BACKBONE_COMMIT="$GITHUB_SHA" --json > deployment.json
-          deployment=$(python -c 'import json; print(json.load(open("deployment.json"))["deployment"]["url"])')
-          vercel alias set "$deployment" backbone-study.vercel.app --scope ronit-jain
+        run: vercel deploy --prod --yes --cwd website --env BACKBONE_COMMIT="$GITHUB_SHA"
       - name: Verify backend revision and both courses
         run: python scripts/deploy.py backend
       - name: Verify public site, both courses, and a follow-up
