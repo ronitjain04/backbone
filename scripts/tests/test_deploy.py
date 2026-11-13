@@ -1,5 +1,5 @@
 import pytest
-from scripts.deploy import wait_for_revision, validate_answer, deploy_hook_url
+from scripts.deploy import wait_for_revision, validate_answer
 
 
 def test_wait_ignores_old_revision_and_transient_failures():
@@ -21,11 +21,6 @@ def test_live_answers_require_course_context_and_sources():
     validate_answer(good, 'cs2110')
     for bad in [{**good, 'course':'cs2200'}, {**good, 'citations':[]}, {**good, 'answer':''}, {**good, 'supports_history': False}]:
         with pytest.raises(ValueError): validate_answer(bad, 'cs2110')
-
-
-def test_hook_targets_exact_commit_and_rejects_other_hosts():
-    assert deploy_hook_url('https://api.render.com/deploy/srv-example?key=private', 'a'*40).endswith('&ref='+'a'*40)
-    with pytest.raises(ValueError): deploy_hook_url('https://evil.example/deploy?key=x', 'a'*40)
 
 
 def test_same_commit_requires_a_replacement_instance():
@@ -57,3 +52,18 @@ def test_homepage_check_identifies_the_workflow(monkeypatch):
     monkeypatch.setattr(deploy, 'wait_ready', lambda _: None)
     monkeypatch.setattr(deploy, 'request_json', lambda url,data: {'course':data['course'], 'supports_history':True, 'answer':'answer [1]', 'citations':[{}], 'context':[{}]})
     deploy.smoke('https://example.com')
+
+
+def test_vercel_backend_verification_checks_revision_and_both_courses():
+    from scripts.deploy import verify_backend
+    def request(url):
+        return {'commit':'new','instance':'dpl_ready'} if url.endswith('/health') else {'courses':['cs2110','cs2200']}
+    verify_backend('https://api.example','new',request=request,sleep=lambda _:None,attempts=1)
+
+
+def test_vercel_backend_verification_rejects_missing_course():
+    from scripts.deploy import verify_backend
+    def request(url):
+        return {'commit':'new','instance':'dpl_ready'} if url.endswith('/health') else {'courses':['cs2200']}
+    with pytest.raises(RuntimeError,match='course'):
+        verify_backend('https://api.example','new',request=request,sleep=lambda _:None,attempts=1)
