@@ -39,3 +39,12 @@ def test_public_site_does_not_disable_backend_auth(tmp_path):
     backend=create_app(retriever=Retriever(),model=Model(),service_token='secret')
     with TestClient(backend) as c:
         assert c.post('/api/chat',json={'query':'hazards'}).status_code==401
+
+
+def test_missing_runtime_assets_returns_404_after_cdn_extraction(tmp_path):
+    backend=create_app(retriever=Retriever(),model=Model(),service_token='secret')
+    with TestClient(create_site(backend,token='secret',public_dir=tmp_path/'missing')) as c:
+        assert c.get('/private-data/cs2110/cs2110.jsonl.gz.b64').status_code==404
+        assert c.get('/backend/data/demo.jsonl').status_code==404
+        assert c.get('/.env').status_code==404
+        assert c.get('/api/status').json()=={'ready':True}

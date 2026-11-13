@@ -68,7 +68,10 @@ def create_site(backend=None, *, token=None, public_dir=None):
             return JSONResponse({'detail': 'Enter a valid question, course and conversation context.'}, status_code=400)
         return JSONResponse(result.json(), status_code=result.status_code)
 
-    app.mount('/', StaticFiles(directory=public_dir, html=True, check_dir=False), name='website')
+    # Vercel serves public/ from its CDN and may omit it from the function.
+    # Keep a local static mount only when those files exist at runtime.
+    if Path(public_dir).is_dir():
+        app.mount('/', StaticFiles(directory=public_dir, html=True), name='website')
     return app
 
 
