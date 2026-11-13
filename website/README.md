@@ -4,7 +4,7 @@ A responsive introduction and live study chat, with source excerpts. The Python 
 
 ## Current state
 
-The website and Render API are deployed and connected to Groq using GPT-OSS 20B. A complete live answer with source excerpts was verified through the published website. The website is public at [backbone-study.pages.dev](https://backbone-study.pages.dev). The configured readiness endpoint checks loaded resources and model settings, not provider availability or remaining quota; inference remains subject to provider limits.
+The Cloudflare Pages website and Vercel API are deployed and connected to Groq using GPT-OSS 20B. A complete live answer with source excerpts was verified through the published website. The website is public at [backbone-study.pages.dev](https://backbone-study.pages.dev). The configured readiness endpoint checks loaded resources and model settings, not provider availability or remaining quota; inference remains subject to provider limits.
 
 Assistant answers render Markdown, syntax-highlighted C/C++ and LC-3 code, and inline/display TeX equations. The renderer disables raw HTML, sanitizes its output, and keeps questions and retrieved excerpts literal. Invalid equations remain readable. Browser dependencies, KaTeX styles, and WOFF2 math fonts are bundled and served from the same origin; code blocks, tables, and display equations scroll within the answer. KaTeX layout requires inline style attributes; inline scripts remain disallowed by CSP.
 
@@ -143,22 +143,31 @@ node --check website/site/dist/server/index.js
 
 Before calling it a working live demo: check `/ready`, submit a real question through the published website, inspect its returned sources, and verify visitor access. Unit tests use a controlled model boundary and do not prove a hosted model is running. Inference requests send the question and retrieved excerpts to your configured model provider; configure its retention and privacy settings accordingly.
 
+## Vercel backend
+
+The live frontend remains [backbone-study.pages.dev](https://backbone-study.pages.dev); its server-side proxy connects to [backbone-api.vercel.app](https://backbone-api.vercel.app). The backend runs as a Python 3.12 FastAPI function on Vercel Hobby, with a 120-second function limit. Hosting and model quotas still apply. Startup and model-response latency vary; this removes Render's minute-long idle wake-up behavior rather than guaranteeing a fixed response time.
+
+Deploy from `website/`: `.python-version`, `pyproject.toml` and `vercel.json` configure the runtime and entrypoint. `.vercelignore` excludes frontend files, local credentials, private corpora and development environments from source uploads. Private CS 2110 data is loaded in memory through the official Vercel Blob SDK; the complete corpus has no public download route and is never committed. Vercel Blob must be **Private**, with `CS2110_CORPUS_BLOB=courses/cs2110.jsonl.gz.b64`. `BLOB_STORE_ID` identifies the connected store. Use the store's encrypted `BLOB_READ_WRITE_TOKEN` or Vercel's project-bound OIDC identity. The loader bounds encoded and expanded data at 20 MiB. The CS 2200 collection remains `CORPUS_PATH=backend/data/demo.jsonl`.
+
+Keep `MODEL_API_KEY` and `BACKEND_TOKEN` as production **Secret** values in Vercel. Configure `MODEL_PROVIDER`, `MODEL_BASE_URL`, `MODEL_NAME` and `RETRIEVAL_MODE` there as well. Cloudflare must have the matching encrypted `BACKEND_TOKEN` and production `BACKEND_URL=https://backbone-api.vercel.app`. Do not put these secrets in browser files. Secret environment values cannot be downloaded through `vercel env pull`; it returns placeholders for them.
+
 ## Automated tests and deployment
 
-[GitHub Actions](https://github.com/ronitjain04/backbone/actions/workflows/ci-deploy.yml) runs the frontend suite/build and backend/deployment suite on every push and pull request. Successful runs on `main` deploy production, as do manual runs on `main` and the daily **09:17 UTC** schedule. GitHub may delay scheduled runs; this is not an uptime service. Pull requests and other branches never deploy.
+[GitHub Actions](https://github.com/ronitjain04/backbone/actions/workflows/ci-deploy.yml) runs the frontend suite/build and Python backend/deployment suite on pushes and pull requests. Successful `main` runs deploy production, as do manual runs on `main` and the daily **09:17 UTC** schedule. GitHub may delay scheduled runs. Pull requests and other branches never deploy.
 
 Configure these repository Actions settings:
 
 | Setting | Type | Purpose |
 | --- | --- | --- |
 | `CLOUDFLARE_ACCOUNT_ID` | Variable | Account owning the existing `backbone-study` Pages project |
-| `CLOUDFLARE_API_TOKEN` | Secret | Account-scoped Cloudflare Pages Edit permission |
-| `RENDER_DEPLOY_HOOK_URL` | Secret | Deploy hook for the existing `backbone-demo-api` service |
+| `CLOUDFLARE_API_TOKEN` | Secret | Cloudflare Pages Edit permission |
+| `VERCEL_ORG_ID` | Variable | Vercel account/team owning `backbone-api` |
+| `VERCEL_PROJECT_ID` | Variable | Existing backend project ID |
+| `VERCEL_TOKEN` | Secret | Project-scoped deployment access |
+| `BACKEND_URL` | Variable | `https://backbone-api.vercel.app` |
 
-The workflow fails before deploying if any setting is absent. It sends the tested commit SHA to Render, waits for `/health` to report that SHA on a replacement instance, and checks both course configurations before publishing the frontend artifact to Pages. Deployment verification then requests real answers for CS 2110 and CS 2200 and a contextual follow-up, requiring sources and conversation support. Smoke checks use the configured model quota (three answers and one query rewrite per deployment) and do not print answer text or private excerpts. Model/provider outages fail verification even if deployment succeeded; inspect host logs and rerun the workflow after resolving the outage. Render's free instance may take time to wake.
+The workflow fails before deploying if any setting is absent. The pinned Vercel CLI uploads the checked-out backend commit and waits for deployment completion. `BACKBONE_COMMIT` records the tested SHA in the function environment; `/health` must match that SHA and `/ready` must include both courses before Cloudflare receives the tested frontend artifact. Keep Vercel's independent Git auto-deployment disconnected so GitHub's test gate controls releases.
 
-Keep `BACKEND_URL` and encrypted `BACKEND_TOKEN` in the Cloudflare project's **production** runtime settings. Model credentials and private course files remain in Render. They are not needed by GitHub. Keep Render auto-deployment off so the test gate controls releases. The deploy hook's `ref` pins the exact tested commit even if Render's configured branch differs.
+Public smoke checks request real answers for both courses plus a contextual follow-up, requiring sources and conversation support. This uses three answers and one query rewrite per deployment and does not print private source excerpts. The inference budget is per function process, not a global limit across Vercel instances; provider quotas still constrain use. Model/provider outages fail verification even if deployment succeeded. Rerun from **Actions → Test and deploy Backbone → Run workflow → main** after fixing an outage. There is no automatic rollback.
 
-To rerun: open **Actions → Test and deploy Backbone → Run workflow**, choose `main`. Production is [backbone-study.pages.dev](https://backbone-study.pages.dev). A run verifies deployment only when the final live-check step succeeds. It does not automatically roll back either host after a failure.
-
-The single-instance release check verifies replacement since the pre-deploy baseline, not the status of a specific Render deploy ID. A simultaneous platform restart of the same SHA could satisfy that check; manual overlapping host deployments should be avoided.
+The Render service is retained as a rollback target. To roll back manually, restore Cloudflare's production `BACKEND_URL` to its previous Render URL and redeploy the frontend; the service token is unchanged. New automatic backend deployments target Vercel.

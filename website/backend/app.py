@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 from .inference import InferenceClient
 from .retrieval import Retriever
+from .corpus import load_blob_corpus
 from .conversation import ChatMessage, MAX_HISTORY_MESSAGES, validate_history
 
 logger=logging.getLogger(__name__)
@@ -41,11 +42,18 @@ def create_app(retriever=None, model=None, service_token=None, rate_limit=10, al
             path = os.getenv(f'{course.upper()}_CORPUS_PATH')
             if course == 'cs2200' and not path:
                 path = os.getenv('CORPUS_PATH')
-            if course not in courses and path:
+            blob_path = os.getenv(f'{course.upper()}_CORPUS_BLOB')
+            if course not in courses and (path or blob_path):
                 try:
-                    courses[course] = await asyncio.to_thread(Retriever, path, os.getenv('RETRIEVAL_MODE','lexical'))
+                    if blob_path:
+                        text = await load_blob_corpus(blob_path)
+                        courses[course] = await asyncio.to_thread(Retriever, mode=os.getenv('RETRIEVAL_MODE','lexical'), text=text)
+                    else:
+                        courses[course] = await asyncio.to_thread(Retriever, path, os.getenv('RETRIEVAL_MODE','lexical'))
                 except Exception:
                     logger.error('Course %s could not be loaded; verify its private corpus configuration', course)
+                    if blob_path:
+                        raise
         try:
             if state['model'] is None and os.getenv('MODEL_BASE_URL') and os.getenv('MODEL_NAME'):
                 state['model']=InferenceClient(os.environ['MODEL_BASE_URL'],os.environ['MODEL_NAME'],os.getenv('MODEL_API_KEY',''),provider=os.getenv('MODEL_PROVIDER','compatible'))
@@ -55,7 +63,7 @@ def create_app(retriever=None, model=None, service_token=None, rate_limit=10, al
     app=FastAPI(title='Backbone API',lifespan=lifespan,docs_url=None,redoc_url=None)
     def configured(course): return course in courses and state['model'] is not None and (bool(token) or allow_unauthenticated)
     @app.get('/health')
-    async def health(): return {'status':'ok', 'commit':os.getenv('RENDER_GIT_COMMIT'), 'instance':os.getenv('RENDER_INSTANCE_ID')}
+    async def health(): return {'status':'ok', 'commit':os.getenv('BACKBONE_COMMIT') or os.getenv('VERCEL_GIT_COMMIT_SHA') or os.getenv('RENDER_GIT_COMMIT'), 'instance':os.getenv('VERCEL_DEPLOYMENT_ID') or os.getenv('RENDER_INSTANCE_ID')}
     @app.get('/ready')
     async def ready(course: Optional[CourseId] = None):
         available = [key for key in ('cs2110', 'cs2200') if configured(key)]

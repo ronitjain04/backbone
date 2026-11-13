@@ -1,0 +1,10 @@
+site
+private-data
+.venv
+.vercel
+__pycache__
+backend/tests
+backend/tools
+backend/.env*
+*.env
+.env*

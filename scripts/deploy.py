@@ -1,10 +1,8 @@
 """Deployment verification. Credentials are read only from the environment."""
 import json
 import os
-import re
 import sys
 import time
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 
@@ -13,19 +11,6 @@ def request_json(url, data=None):
     headers = {'Content-Type': 'application/json', 'User-Agent': 'Backbone-GitHub-Actions'}
     with urlopen(Request(url, data=body, headers=headers), timeout=80) as response:
         return json.load(response)
-
-
-def deploy_hook_url(hook, commit):
-    url = urlsplit(hook)
-    if url.scheme != 'https' or url.netloc != 'api.render.com' or not url.path.startswith('/deploy/srv-'):
-        raise ValueError('RENDER_DEPLOY_HOOK_URL must be a Render service deploy hook')
-    if not re.fullmatch(r'[0-9a-f]{40}', commit):
-        raise ValueError('A full tested Git commit is required')
-    query = dict(parse_qsl(url.query))
-    if not query.get('key'):
-        raise ValueError('The Render deploy hook must contain its authentication key')
-    query['ref'] = commit
-    return urlunsplit((url.scheme, url.netloc, url.path, urlencode(query), ''))
 
 
 def wait_for_revision(base, commit, *, request=request_json, sleep=time.sleep, attempts=90, previous_instance=None):
@@ -38,7 +23,7 @@ def wait_for_revision(base, commit, *, request=request_json, sleep=time.sleep, a
             pass
         if attempt + 1 < attempts:
             sleep(10)
-    raise RuntimeError('Render did not serve the tested commit before the deployment deadline')
+    raise RuntimeError('Backend did not serve the tested commit before the deployment deadline')
 
 
 def wait_ready(base, *, request=request_json, sleep=time.sleep, attempts=30):
@@ -74,34 +59,24 @@ def smoke(base):
         validate_answer(result, course)
         if course == 'cs2200':
             follow = request_json(base + '/api/chat', {'course': course, 'query': 'Can you give a short example?',
-                'history': [{'role':'user', 'content':query}, {'role':'assistant', 'content':result['answer'][:6000]}]})
+                'history': [{'role':'user', 'content':query}, {'role':'assistant', 'content':result['answer'][:4000]}]})
             validate_answer(follow, course)
         print(course + ': live answer and sources verified')
 
 
+def verify_backend(base, commit, *, request=request_json, sleep=time.sleep, attempts=90):
+    wait_for_revision(base, commit, request=request, sleep=sleep, attempts=attempts)
+    ready = request(base.rstrip('/') + '/ready')
+    if not {'cs2110', 'cs2200'}.issubset(ready.get('courses', [])):
+        raise RuntimeError('The tested backend is missing a configured course')
+
+
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] not in ('render', 'smoke'):
-        raise ValueError('Usage: python scripts/deploy.py render|smoke')
-    if sys.argv[1] == 'render':
-        commit = os.environ['GITHUB_SHA']
-        hook = deploy_hook_url(os.environ['RENDER_DEPLOY_HOOK_URL'], commit)
-        # Wake the existing service before taking a baseline; never log its response.
-        baseline = None
-        for attempt in range(30):
-            try:
-                baseline = request_json(os.environ['BACKEND_URL'].rstrip('/') + '/health')
-                break
-            except (OSError, ValueError):
-                if attempt < 29: time.sleep(10)
-        if baseline is None:
-            raise RuntimeError('Could not establish the backend instance before deployment')
-        # Do not print the secret URL or provider response.
-        request_json(hook, {})
-        wait_for_revision(os.environ['BACKEND_URL'], commit, previous_instance=baseline.get('instance'))
-        ready = request_json(os.environ['BACKEND_URL'].rstrip('/') + '/ready')
-        if not {'cs2110', 'cs2200'}.issubset(ready.get('courses', [])):
-            raise RuntimeError('The tested backend is missing a configured course')
-        print('Render is serving the tested commit with both courses configured')
+    if len(sys.argv) != 2 or sys.argv[1] not in ('backend', 'smoke'):
+        raise ValueError('Usage: python scripts/deploy.py backend|smoke')
+    if sys.argv[1] == 'backend':
+        verify_backend(os.environ['BACKEND_URL'], os.environ['GITHUB_SHA'])
+        print('Vercel is serving the tested commit with both courses configured')
     else:
         smoke(os.environ['SITE_URL'])
 
