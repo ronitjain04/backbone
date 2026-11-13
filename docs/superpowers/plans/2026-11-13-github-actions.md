@@ -20,11 +20,14 @@
 - Live inference must be exercised without logging private source excerpts
 
 ### Task 1: Release verification and smoke checks
-- [ ] Add failing tests for health commit metadata, exact revision polling, bounded failures and smoke response validation
-- [ ] Implement health revision and Python deployment helpers
-- [ ] Run backend and deployment tests
+- [x] Add failing tests for health commit metadata, exact revision polling, bounded failures and smoke response validation
+- [x] Implement health revision and Python deployment helpers
+- [x] Run backend and deployment tests
 
 ### Task 2: Workflow and setup documentation
-- [ ] Add test jobs, build artifact, guarded deployment, daily schedule and manual trigger
-- [ ] Document credentials and recovery; validate YAML and run all tests/build
-- [ ] Commit and push a PR, verify GitHub CI, configure credentials, merge and verify a production run
+- [x] Add test jobs, build artifact, guarded deployment, daily schedule and manual trigger
+- [x] Document credentials and recovery; validate YAML and run all tests/build
+- [x] Commit and push PR #6; frontend and backend GitHub CI passed
+- [ ] Configure approved deployment credentials, merge and verify a production run
+
+Review: independent final review found no critical or important issues after adding replacement-instance checks. Local checks: 36 frontend tests, 42 Python tests, build, Worker syntax, actionlint, and diff whitespace check pass.
