@@ -52,6 +52,8 @@ def create_app(retriever=None, model=None, service_token=None, rate_limit=10, al
                         courses[course] = await asyncio.to_thread(Retriever, path, os.getenv('RETRIEVAL_MODE','lexical'))
                 except Exception:
                     logger.error('Course %s could not be loaded; verify its private corpus configuration', course)
+                    if blob_path:
+                        raise
         try:
             if state['model'] is None and os.getenv('MODEL_BASE_URL') and os.getenv('MODEL_NAME'):
                 state['model']=InferenceClient(os.environ['MODEL_BASE_URL'],os.environ['MODEL_NAME'],os.getenv('MODEL_API_KEY',''),provider=os.getenv('MODEL_PROVIDER','compatible'))

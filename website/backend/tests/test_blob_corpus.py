@@ -52,3 +52,25 @@ def test_health_reports_explicit_vercel_release(monkeypatch):
     monkeypatch.setenv('VERCEL_DEPLOYMENT_ID','dpl_example')
     with TestClient(create_app()) as client:
         assert client.get('/health').json()=={'status':'ok','commit':'b'*40,'instance':'dpl_example'}
+
+
+def test_blob_download_retries_transient_failure():
+    import httpx
+    attempts=[]
+    async def download(_):
+        attempts.append(True)
+        if len(attempts)<3: raise httpx.ConnectError('temporary outage')
+        return base64.b64encode(gzip.compress(b'course text'))
+    async def sleep(_): pass
+    assert asyncio.run(load_blob_corpus('courses/cs2110.jsonl.gz.b64',download=download,sleep=sleep))=='course text'
+    assert len(attempts)==3
+
+
+def test_explicit_blob_failure_prevents_partial_startup(monkeypatch):
+    from fastapi.testclient import TestClient
+    from website.backend import app as module
+    monkeypatch.setenv('CS2110_CORPUS_BLOB','courses/cs2110.jsonl.gz.b64')
+    async def load(_): raise RuntimeError('unavailable')
+    monkeypatch.setattr(module,'load_blob_corpus',load)
+    with pytest.raises(RuntimeError,match='unavailable'):
+        with TestClient(module.create_app()): pass
