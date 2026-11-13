@@ -64,7 +64,7 @@ def validate_answer(data, course):
 
 def smoke(base):
     base = base.rstrip('/')
-    with urlopen(base, timeout=30) as response:
+    with urlopen(Request(base, headers={'User-Agent': 'Backbone-GitHub-Actions'}), timeout=30) as response:
         if response.status != 200 or b'Backbone' not in response.read():
             raise RuntimeError('The public homepage did not load')
     wait_ready(base)

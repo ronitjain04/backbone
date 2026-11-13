@@ -41,3 +41,19 @@ def test_matching_commit_on_same_instance_cannot_pass():
 def test_first_upgrade_requires_a_nonempty_instance():
     replies = iter([{'commit':'new'}, {'commit':'new', 'instance':'first'}])
     wait_for_revision('https://api.example', 'new', previous_instance=None, request=lambda _: next(replies), sleep=lambda _: None, attempts=2)
+
+
+def test_homepage_check_identifies_the_workflow(monkeypatch):
+    from scripts import deploy
+    class Homepage:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def read(self): return b'<title>Backbone</title>'
+    def open_homepage(request, **kwargs):
+        assert request.get_header('User-agent') == 'Backbone-GitHub-Actions'
+        return Homepage()
+    monkeypatch.setattr(deploy, 'urlopen', open_homepage)
+    monkeypatch.setattr(deploy, 'wait_ready', lambda _: None)
+    monkeypatch.setattr(deploy, 'request_json', lambda url,data: {'course':data['course'], 'supports_history':True, 'answer':'answer [1]', 'citations':[{}], 'context':[{}]})
+    deploy.smoke('https://example.com')
