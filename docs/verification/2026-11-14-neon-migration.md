@@ -40,7 +40,10 @@ Existing deployments retain their original environment snapshots. Use the newest
 - Use the direct Neon connection. Its pooled URL rejects the application's startup `statement_timeout` option. The direct URL passed an actual Store workflow: create a temporary student, save a draft, restore it and read ordered replay events. The temporary student was deleted, then the final snapshot was refreshed so validation writes were excluded from the cutover data.
 - The bundled local PostgreSQL command-line tools lacked TLS support, so the transfer used psycopg's TLS-enabled COPY protocol instead of an insecure connection or disabled TLS validation.
 - Vercel stores the Neon URL as a Secret, with TLS required. The existing owner replay credential remains unchanged.
-- Hosted workflow verification is recorded below after deployment.
+- Deployed runtime revision `3610cd3` using the Neon Secret at https://backbone-6c1e6xxc1-ronit-jain.vercel.app/practice.html (Vercel authentication required).
+- Hosted verification created a clearly named test student in Neon, saved `2 KiB` for the memory-capacity exercise, checked it successfully, refreshed and restored the selected exercise/answer/completion, retrieved a cited hint, and replayed the seven ordered events.
+- Independent provider queries confirmed the new verification student exists in Neon while Render remains at five students and 37 events. Render's default read-only setting is on.
+- Backend/PostgreSQL and frontend/build CI jobs passed for the migration documentation commit. Existing application code and schema are unchanged.
 
 ## Rollback
 
