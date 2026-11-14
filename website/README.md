@@ -206,9 +206,21 @@ docker run --name backbone-practice-pg -e POSTGRES_PASSWORD=local-demo-only \
 
 Configure the corresponding local URL through your shell/environment manager;
 never commit a real connection credential. Hosted connections must use TLS
-(`sslmode=require`). Render Free Postgres expires after **30 days** and has no
-backups; use it only for the temporary company demo. The instance created for this
-work expires December 14, 2026. No paid database or automatic upgrade is configured.
+(`sslmode=require`). The active practice database uses **Neon Free**, PostgreSQL 17
+in AWS Virginia, with scale-to-zero and the free plan's monthly usage/storage
+limits. It has no fixed 30-day expiry. No paid plan or automatic upgrade is configured.
+The former Render database remains a read-only rollback copy until it expires on
+December 14, 2026; older review deployments still point there and cannot save new work.
+Use the latest Neon-backed review URL from the PR, or the normal public domain once
+this PR is merged and deployed.
+
+Keep the existing psycopg driver and use Neon's **direct** connection URL (hostname
+without `-pooler`) for this demo. Backbone supplies a connection-level
+`statement_timeout`, which the Neon transaction pooler rejects. The direct URL
+was verified with the actual persistence and replay workflow. If traffic requires
+pooling later, move timeout configuration into transactions before changing URLs.
+See [Neon plan limits](https://neon.com/pricing) and the
+[migration verification record](../docs/verification/2026-11-14-neon-migration.md).
 
 “Try as a student” creates an anonymous identity with an opaque HttpOnly cookie.
 Drafts, selected exercise, attempts, feedback, hint levels, completion and ordered
