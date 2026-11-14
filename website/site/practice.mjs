@@ -1,7 +1,17 @@
 import {renderAnswer} from './answer-renderer.mjs';
+import {outcomeLabel} from './learning.mjs';
+import {mountReplay} from './replay.mjs';
+import {mountMemoryVisual} from './memory-visual.mjs';
 const $=id=>document.getElementById(id);
 let state=null,selected=null,timer=null,saving=Promise.resolve(),busy=false,events=[],ownerKey='';
 const pendingActions=new Map();
+let visual=null,replayPlayer=null,presenceTimer=null,presenceSequence=0;
+const tabId=crypto.randomUUID();
+async function heartbeat(connected=true){if(!state)return;try{await api('presence',{tab_id:tabId,sequence:++presenceSequence,connected})}catch{}}
+function startPresence(){clearInterval(presenceTimer);heartbeat();presenceTimer=setInterval(()=>{if(!document.hidden)heartbeat()},15000)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)heartbeat()});
+window.addEventListener('online',()=>heartbeat());
+window.addEventListener('pagehide',()=>{if(state)fetch('/api/practice/presence',{method:'POST',credentials:'same-origin',keepalive:true,headers:{'Content-Type':'application/json'},body:JSON.stringify({tab_id:tabId,sequence:++presenceSequence,connected:false})}).catch(()=>{})});
 const topics={numbers:'Number representation',memory:'Memory & addressing',lc3:'LC-3 execution'};
 const node=(tag,text,className)=>{const el=document.createElement(tag);el.textContent=text;if(className)el.className=className;return el};
 async function api(path,data,headers={}){
@@ -48,10 +58,16 @@ function select(id){
  $('practice-save').textContent=draft===p?'Saved':'Recovered draft · saving…';
  $('practice-feedback').replaceChildren(node('p','Your first attempt is a starting point. What do you think?'));
  const last=state.actions.filter(a=>a.exercise_id===id&&a.result).at(-1);if(last)feedback(last.result);
- $('practice-follow').hidden=!p.completed||id.endsWith('-follow');list();
+ $('practice-follow').hidden=!p.completed||id.endsWith('-follow');
+ $('practice-outcome').textContent=outcomeLabel(p.outcome);
+ visual?.destroy();visual=mountMemoryVisual($('practice-visual'),{exercise:e,progress:state.visuals?.[id]??{},request:async settings=>{
+  await flush();const key=`backbone-practice-visual:${state.session_id}:${id}`;let pending;try{pending=JSON.parse(localStorage.getItem(key))}catch{}
+  pending??={exercise_id:id,request_key:crypto.randomUUID(),...settings};try{localStorage.setItem(key,JSON.stringify(pending))}catch{}
+  const result=await api('visual',pending);if(result.status==='visual'){try{localStorage.removeItem(key)}catch{}}return result;
+ },onState:r=>{(state.visuals??={})[id]=r}});list();
  if(draft!==p)timer=setTimeout(()=>flush().catch(error),600);
 }
-function show(s){state=s;$('practice-entry').hidden=true;$('practice-workspace').hidden=false;$('practice-replay').hidden=false;select(selected&&s.exercises.some(e=>e.id===selected)?selected:(s.selected_exercise??'num-01'))}
+function show(s){state=s;$('practice-entry').hidden=true;$('practice-workspace').hidden=false;$('practice-replay').hidden=false;startPresence();select(selected&&s.exercises.some(e=>e.id===selected)?selected:(s.selected_exercise??'num-01'))}
 async function saveCurrent(){
  if(!state||!selected)return;
  const id=selected,p=progress(),answer=$('practice-answer').value,work=$('practice-work').value,key=localKey();
@@ -82,7 +98,7 @@ async function action(kind){
   pendingActions.delete(pendingKey);try{localStorage.removeItem(pendingKey)}catch{}
   feedback(result);state.actions.push({exercise_id:selected,kind,result});
   if(recovered)$('practice-feedback').append(node('p','Recovered feedback for your earlier attempt. Your current draft is still here; check it when you are ready.','practice-note'));
-  if(result.status==='correct')p.completed=true;if(result.status==='hint')p.hint_level=result.level;
+  if(result.outcome){p.outcome=result.outcome;$('practice-outcome').textContent=outcomeLabel(p.outcome)}if(result.status==='correct')p.completed=true;if(result.status==='hint')p.hint_level=result.level;
   $('practice-follow').hidden=!p.completed||selected.endsWith('-follow');list();
  }catch(err){error(err)}finally{setBusy(false)}
 }
@@ -91,25 +107,11 @@ $('practice-retry-save').addEventListener('click',()=>{clearError();flush().catc
 $('practice-follow').addEventListener('click',async()=>{try{await flush();const id=selected+'-follow';await api('select',{exercise_id:id});select(id)}catch(err){error(err)}});
 $('practice-delete').addEventListener('click',async()=>{
  if(!confirm('Delete your saved demo work, hints, and replay history?'))return;
- try{await saving.catch(()=>{});clearTimeout(timer);await api('delete',{});const prefix=`backbone-practice:${state.session_id}:`,pendingPrefix=`backbone-practice-action:${state.session_id}:`;try{Object.keys(localStorage).filter(k=>k.startsWith(prefix)||k.startsWith(pendingPrefix)).forEach(k=>localStorage.removeItem(k))}catch{}state=null;selected=null;$('practice-workspace').hidden=true;$('practice-replay').hidden=true;$('practice-replay-panel').hidden=true;$('practice-entry').hidden=false}catch(err){error(err)}
+ try{await saving.catch(()=>{});clearTimeout(timer);await api('delete',{});const prefix=`backbone-practice:${state.session_id}:`,pendingPrefix=`backbone-practice-action:${state.session_id}:`;try{Object.keys(localStorage).filter(k=>k.startsWith(prefix)||k.startsWith(pendingPrefix)).forEach(k=>localStorage.removeItem(k))}catch{}clearInterval(presenceTimer);visual?.destroy();replayPlayer?.destroy();state=null;selected=null;$('practice-workspace').hidden=true;$('practice-replay').hidden=true;$('practice-replay-panel').hidden=true;$('practice-entry').hidden=false}catch(err){error(err)}
 });
-function replay(){
- const i=Number($('replay-step').value),event=events[i];if(!event)return;
- $('replay-position').textContent=`${i+1} / ${events.length} · ${new Date(event.at).toLocaleString()} · ${event.kind.replaceAll('_',' ')}`;
- const target=$('replay-event');target.replaceChildren(node('h3',event.exercise_id??'Session started'));
- // Render the accumulated state at this point, rather than regenerating tutor responses.
- let answer='',work='',results=[];
- for(const prior of events.slice(0,i+1)){
-  if(prior.exercise_id!==event.exercise_id)continue;
-  if('answer' in prior.payload){answer=prior.payload.answer;work=prior.payload.work??''}
-  if(prior.kind.endsWith('_finished'))results.push(prior.payload);
- }
- target.append(node('h4','Submitted work'),node('pre',answer),node('pre',work));
- for(const r of results){target.append(node('h4',r.status),node('p',r.message??''));if(r.misconception)target.append(node('blockquote',r.misconception.evidence));if(r.sources?.length){const details=node('details','');details.append(node('summary','Supporting sources for this step'));sources(details,r.sources);target.append(details)}}
-}
-function showReplay(items){events=items;$('practice-replay-panel').hidden=false;$('replay-step').max=String(Math.max(0,events.length-1));$('replay-step').value=String(Math.max(0,events.length-1));replay();const panel=$('practice-replay-panel');panel.tabIndex=-1;panel.focus({preventScroll:true});panel.scrollIntoView?.({behavior:'smooth',block:'start'})}
+function showReplay(items){events=items;replayPlayer?.destroy();$('practice-replay-panel').hidden=false;replayPlayer=mountReplay($('replay-content'),events);const panel=$('practice-replay-panel');panel.tabIndex=-1;panel.focus({preventScroll:true});panel.scrollIntoView?.({behavior:'smooth',block:'start'})}
 $('practice-replay').addEventListener('click',async()=>{try{await flush();showReplay((await api('events')).events)}catch(err){error(err)}});
-$('replay-step').addEventListener('input',replay);$('replay-close').addEventListener('click',()=>{$('practice-replay-panel').hidden=true});
+$('replay-close').addEventListener('click',()=>{replayPlayer?.destroy();$('practice-replay-panel').hidden=true});
 $('practice-owner-load').addEventListener('click',async()=>{
  ownerKey=$('practice-owner-key').value;$('practice-owner-key').value='';
  try{const data=await api('classroom',undefined,{'X-Practice-Owner':ownerKey});const target=$('practice-classroom');target.replaceChildren();
