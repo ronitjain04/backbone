@@ -9,7 +9,7 @@ Spec approved by Ronit: November 14, 2026. Anonymous student entry selected.
 - Task 3: complete — separate practice workspace, cookie identity, refresh recovery, selected exercise, unsent draft recovery, personal and protected classroom replay.
 - Task 4: complete — bounded arithmetic/units and fixed-width patterns, universal symbolic checking of the documented LC3 subset, source/rubric assessments with explicit uncertainty.
 - Task 5: complete — first demonstrably false arithmetic step, fixed-width wrap handling, validated exact student evidence and source citations for suspected misconceptions. Wrong results alone do not imply a misconception.
-- Task 6: implementation complete; hosted/visual verification in progress — reviewed three-level ladders retrieve verified course sources, preserve prior attempts/hints, and stop before disclosing the final answer. Lost-response retries keep idempotency IDs; interrupted requests recover after 90 seconds.
+- Task 6: complete — reviewed three-level ladders retrieve verified course sources, preserve prior attempts/hints, and stop before disclosing the final answer. Lost-response retries keep idempotency IDs; interrupted requests recover after 90 seconds.
 
 ## Rulings and review
 
@@ -34,3 +34,16 @@ Spec approved by Ronit: November 14, 2026. Anonymous student entry selected.
 6. On Write a bounded snippet, try `AND R0,R0,#0` / `ADD R0,R0,#4` / `NOT R0,R0`: a different valid solution is accepted for all initial registers.
 7. Try Same width, different storage for a source/rubric explanation assessment. Treat the verdict as AI feedback, not an authoritative grade.
 8. Open Replay my session and scrub timestamped events. Owner-only classroom replay is available through its separate access token.
+
+## Verification results
+
+- Full local suite: **102 Python tests passed**, including actual PostgreSQL, and **41 frontend tests passed**. Static assets build and credential-pattern scan pass.
+- Private corpus validation: **18 exercises, 37 anchors, zero invalid references**. Follow-up references share their parent exercise's verified anchors.
+- Independent review: no remaining Important/Critical issues after regression fixes; 31 focused tests rerun independently.
+- GitHub Actions: backend/PostgreSQL and frontend/build jobs pass on the implementation branch and PR. Production deployment correctly skips non-main changes.
+- Hosted backend: a real Groq rubric assessment accepted a valid alternative memory explanation; the symbolic LC3 checker accepted an alternative three-instruction solution. Both persisted completion and submitted work across refresh.
+- Hosted final workspace: equivalent byte/KiB calculations accepted; guiding-question, concept, and intermediate-step hints verified; hint state and timestamps are durably recorded.
+- PostgreSQL read-only verification confirmed exercise versions, saved student sessions, completion records, hints and replay events in the hosted database.
+- Browser checks: desktop layout, 390px mobile layout without horizontal overflow, compact exercise picker, source-backed feedback, refresh restoration, progressive hints and replay. Replay sources are collapsed per step and the timeline receives focus when opened.
+- Review deployment: https://backbone-8kba25jkh-ronit-jain.vercel.app/practice.html (Vercel authentication required). Runtime revision: 958b328. Public production domains remain on the existing main release.
+- PR: https://github.com/ronitjain04/backbone/pull/11. A merge to main will deploy through the existing test-gated production workflow; no merge was performed.
