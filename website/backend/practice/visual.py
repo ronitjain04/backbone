@@ -2,7 +2,7 @@
 SUPPORTED={'mem-03','mem-06','mem-03-follow','mem-06-follow'}
 STAGES=(
  'Which describes the number of locations, and which describes the bits stored at each location? Change one quantity at a time.',
- 'Each address selects one location. With a address bits there are 2^a locations. Addressability tells you how many bits fit in each location.',
+ 'Each address selects one location. With n address bits, there are 2^n locations. Addressability tells you how many bits fit in each location.',
  'Multiply locations by bits per location to obtain total bits. Divide total bits by 8 to express the same capacity in bytes. Check the units at each step.'
 )
 
