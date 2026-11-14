@@ -13,15 +13,15 @@ function clearError(){$('practice-error').hidden=true}
 function progress(){return state.progress[selected]??={answer:'',work:'',revision:0,completed:false,hint_level:0}}
 function localKey(){return `backbone-practice:${state.session_id}:${selected}`}
 function remember(){try{localStorage.setItem(localKey(),JSON.stringify({answer:$('practice-answer').value,work:$('practice-work').value,revision:progress().revision}))}catch{}}
-function setBusy(value){busy=value;for(const id of ['practice-answer','practice-work','practice-check','practice-hint','practice-follow','practice-retry-save','practice-delete'])$(id).disabled=value;document.querySelectorAll('#exercise-list button').forEach(b=>b.disabled=value)}
+function setBusy(value){busy=value;for(const id of ['practice-answer','practice-work','practice-check','practice-hint','practice-follow','practice-retry-save','practice-delete'])$(id).disabled=value;document.querySelectorAll('#exercise-list button').forEach(b=>b.disabled=value);$('practice-selector').disabled=value}
 function list(){
- const target=$('exercise-list');target.replaceChildren();
+ const target=$('exercise-list');target.replaceChildren();const picker=$('practice-selector');picker.replaceChildren();
  for(const [topic,title] of Object.entries(topics)){
-  const group=node('div','', 'practice-topic');group.append(node('h3',title));
+  const group=node('div','', 'practice-topic');group.append(node('h3',title));const optionGroup=document.createElement('optgroup');optionGroup.label=title;
   state.exercises.filter(e=>e.topic===topic&&!e.id.endsWith('-follow')).forEach(e=>{
-   const completed=state.progress[e.id]?.completed;const b=node('button',`${completed?'✓ ':''}${e.title}`);
+   const completed=state.progress[e.id]?.completed;const option=node('option',`${completed?'✓ ':''}${e.title}`);option.value=e.id;option.selected=e.id===selected;optionGroup.append(option);const b=node('button',`${completed?'✓ ':''}${e.title}`);
    b.type='button';b.dataset.exercise=e.id;b.setAttribute('aria-current',String(e.id===selected));b.addEventListener('click',async()=>{if(busy)return;setBusy(true);try{await flush();await api('select',{exercise_id:e.id});select(e.id)}catch(err){error(err)}finally{setBusy(false)}});group.append(b);
-  });target.append(group);
+  });target.append(group);picker.append(optionGroup);
  }
  const completed=state.exercises.filter(e=>!e.id.endsWith('-follow')&&state.progress[e.id]?.completed).length;
  $('practice-progress').textContent=`${completed} / 18 completed · CS 2110`;
@@ -67,6 +67,7 @@ async function saveCurrent(){
 }
 function flush(){clearTimeout(timer);saving=saving.catch(()=>{}).then(saveCurrent);return saving}
 for(const id of ['practice-answer','practice-work'])$(id).addEventListener('input',()=>{remember();$('practice-save').textContent='Unsaved changes';clearTimeout(timer);timer=setTimeout(()=>flush().catch(error),600)});
+$('practice-selector').addEventListener('change',async()=>{const id=$('practice-selector').value;if(busy)return;setBusy(true);try{await flush();await api('select',{exercise_id:id});select(id)}catch(err){error(err);$('practice-selector').value=selected}finally{setBusy(false)}});
 $('practice-start').addEventListener('click',async()=>{clearError();$('practice-start').disabled=true;try{show(await api('start',{name:$('practice-name').value}))}catch(err){error(err)}finally{$('practice-start').disabled=false}});
 async function action(kind){
  if(busy)return;setBusy(true);clearError();
