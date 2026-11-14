@@ -22,6 +22,10 @@ class InferenceClient:
         self.base_url, self.model, self.api_key = base_url.rstrip('/'), model, api_key
         self.client, self.provider = client, provider
 
+    async def assess_practice(self, content):
+        from .practice.assessment import ASSESSMENT_SYSTEM
+        return await self._complete(ASSESSMENT_SYSTEM, content, [], max_tokens=2200)
+
     async def rewrite_query(self, query, history):
         if not history:
             return query

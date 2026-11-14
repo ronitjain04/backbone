@@ -169,3 +169,107 @@ The workflow fails before deploying if any setting is absent. The pinned Vercel 
 Public smoke checks request real answers for both courses plus a contextual follow-up, requiring sources and conversation support. This uses three answers and one query rewrite per deployment and does not print private source excerpts. The inference budget is per function process, not a global limit across Vercel instances; provider quotas still constrain use. Model/provider outages fail verification even if deployment succeeded. Rerun from **Actions → Test and deploy Backbone → Run workflow → main** after fixing an outage. There is no automatic rollback.
 
 Production hosting and automated releases use Vercel only. The old Cloudflare Pages project is no longer required, and GitHub Actions does not need Cloudflare credentials. Use Vercel deployment rollback to restore an earlier combined release. The previous Render service is outside the active deployment workflow.
+
+## Guided practice demo
+
+Open `/practice.html` for 18 original CS 2110 exercises: number representation,
+memory/addressing, and LC-3 execution. Each has an answer, worked reasoning, rubric,
+common mistakes, verified textbook/slide references, a three-level hint ladder and
+an independently checkable follow-up. Answers and check specifications are served
+only by the backend. Private textbook excerpts remain outside Git and browser assets.
+
+Practice needs **PostgreSQL**, independently of the existing chat. Install the
+updated backend requirements, set `DATABASE_URL` securely, then run:
+
+```sh
+python -m website.backend.tools.migrate_practice
+python -m website.backend.tools.validate_practice_sources /private/path/to/cs2110/corpus.jsonl
+npm --prefix website/site ci
+npm --prefix website/site run build:static
+python -m uvicorn website.backend.site:app --host 127.0.0.1 --port 8000
+```
+
+Use the combined Python server for practice, not the legacy Node chat-only preview.
+Set `CS2110_CORPUS_PATH` locally (or retain the Vercel private Blob configuration)
+and the existing Groq model settings for written reasoning assessments. The bank
+is pinned to source fingerprints: if a corpus changes, reverify/update its anchors
+and increment `BANK_VERSION` and every exercise version. Existing sessions keep
+using their pinned definitions. `PRACTICE_AUTO_MIGRATE=1` may bootstrap the new demo
+database at application startup; leave it unset when applying migrations separately.
+
+For a disposable local database, with Docker running:
+
+```sh
+docker run --name backbone-practice-pg -e POSTGRES_PASSWORD=local-demo-only \
+  -e POSTGRES_DB=backbone -p 127.0.0.1:5432:5432 -d postgres:17
+```
+
+Configure the corresponding local URL through your shell/environment manager;
+never commit a real connection credential. Hosted connections must use TLS
+(`sslmode=require`). The active practice database uses **Neon Free**, PostgreSQL 17
+in AWS Virginia, with scale-to-zero and the free plan's monthly usage/storage
+limits. It has no fixed 30-day expiry. No paid plan or automatic upgrade is configured.
+The former Render database remains a read-only rollback copy until it expires on
+December 14, 2026; older review deployments still point there and cannot save new work.
+Use the latest Neon-backed review URL from the PR, or the normal public domain once
+this PR is merged and deployed.
+
+Keep the existing psycopg driver and use Neon's **direct** connection URL (hostname
+without `-pooler`) for this demo. Backbone supplies a connection-level
+`statement_timeout`, which the Neon transaction pooler rejects. The direct URL
+was verified with the actual persistence and replay workflow. If traffic requires
+pooling later, move timeout configuration into transactions before changing URLs.
+See [Neon plan limits](https://neon.com/pricing) and the
+[migration verification record](../docs/verification/2026-11-14-neon-migration.md).
+
+“Try as a student” creates an anonymous identity with an opaque HttpOnly cookie.
+Drafts, selected exercise, attempts, feedback, hint levels, completion and ordered
+UTC events are saved in PostgreSQL. Local browser storage also retains unsent edits
+and unresolved request IDs, so retrying a lost response does not advance a hint.
+Refresh restores the session. Clearing cookies starts a different identity;
+cross-device login is not part of this demo. “Delete my demo data” removes the
+student's persisted work; anonymous aggregate request-budget counters remain for
+up to two days to prevent deletion from bypassing limits.
+
+Each student can replay their own events. Classroom-wide replay requires
+`PRACTICE_OWNER_TOKEN` in the server's secret settings; enter it only in the owner
+panel, where it is kept in memory rather than local storage. No owner key means
+classroom-wide replay is disabled. The exercise bank includes no real assignments
+or grades, and no personal name is required.
+
+Checks return `correct`, `incorrect`, `needs_clarification`, or `unavailable`.
+Bounded arithmetic accepts equivalent values, calculations and explicit units.
+The straight-line LC-3 subset is ADD/AND/NOT, at most eight instructions, with
+16-bit symbolic proof over **all** initial register values. Unsupported syntax or
+an inconclusive solver produces clarification; nothing is passed to a shell,
+compiler, Python eval, or arbitrary-code runner. Correct final values with
+contradictory/unclear reasoning are not endorsed as complete solutions. Exercises
+explicitly asking for reasoning require it before completion.
+
+Written reasoning uses a source-grounded, criterion-level Groq assessment. Student
+quotations and citation membership are validated server-side, but semantic model
+judgments can still be mistaken. A misconception needs actual submitted evidence;
+a wrong final value alone yields a clarifying question. Supported arithmetic errors
+are checked in order, including fixed-width wraparound where appropriate. Retrieved
+source text is stored with the feedback/hint so replay does not change after a model
+or corpus update. Reviewed hints progress from a question to a relation to an
+intermediate step without disclosing the exercise's final answer.
+
+The inference budget is 12 practice actions per student per minute and 60 globally
+per minute across server instances. Session creation is limited to 1,000 per hour.
+Retries with the same request ID do not spend another action or advance hints.
+Interrupted actions become recoverable after 90 seconds. Same-origin writes,
+request-size limits and ownership checks protect the practice API.
+
+Run all integration tests with a dedicated test PostgreSQL URL:
+
+```sh
+TEST_DATABASE_URL='postgresql://postgres:local-demo-only@127.0.0.1:5432/backbone' \
+  python -m pytest website/backend/tests scripts/tests -q
+node --test website/site/tests/*.test.mjs
+```
+
+Each database test creates and removes its own schema. GitHub CI supplies a
+PostgreSQL 17 service, so these tests run there rather than being silently skipped.
+A local run without `TEST_DATABASE_URL` skips database cases and is insufficient
+to verify persistence. Keep production database secrets out of test commands.

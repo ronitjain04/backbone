@@ -1,0 +1,1669 @@
+[
+  {
+    "id": "num-01",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "numbers",
+    "title": "Read the bits",
+    "difficulty": "foundations",
+    "prompt": "Convert the unsigned binary value 0b101101 to decimal.",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "45",
+    "reasoning": "The set place values are 32 + 8 + 4 + 1 = 45.",
+    "checker": {
+      "kind": "number",
+      "value": 45
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Use positional powers of two and sum only the set bits."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Confusing binary positions with decimal digits",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 2.2 Integer Data Types; printed p. 27; PDF p. 56",
+        "fingerprint": "230c68dcf878c1065801cd65d69febc1ff3de2ec0f739351fac1dfdc727bf4fd"
+      },
+      {
+        "source": "CS 2110 — Lab 02 Slides",
+        "details": "Slide 8",
+        "fingerprint": "24030918ceaebf4411e2d16ef5987c8ad412c5b1cbaacbe1890bea5dce7d0734"
+      }
+    ],
+    "hints": [
+      "Which positions contain a 1?",
+      "Each position has weight 2 raised to its position, starting at zero on the right.",
+      "Write the value as 2^5 + 2^3 + 2^2 + 2^0, then evaluate."
+    ],
+    "follow_up": {
+      "id": "num-01-follow",
+      "title": "Take it one step further",
+      "prompt": "Convert unsigned 0b110010 to decimal.",
+      "answer": "50",
+      "reasoning": "32 + 16 + 2 = 50.",
+      "checker": {
+        "kind": "number",
+        "value": 50
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Use positional powers of two and sum only the set bits."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 2.2 Integer Data Types; printed p. 27; PDF p. 56",
+          "fingerprint": "230c68dcf878c1065801cd65d69febc1ff3de2ec0f739351fac1dfdc727bf4fd"
+        },
+        {
+          "source": "CS 2110 — Lab 02 Slides",
+          "details": "Slide 8",
+          "fingerprint": "24030918ceaebf4411e2d16ef5987c8ad412c5b1cbaacbe1890bea5dce7d0734"
+        }
+      ],
+      "hints": [
+        "Which bits are set in the new pattern?",
+        "Use the position weights, with the rightmost bit at position zero.",
+        "Evaluate 2^5 + 2^4 + 2^1."
+      ],
+      "mistakes": [
+        {
+          "label": "Confusing binary positions with decimal digits",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "numbers",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "num-02",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "numbers",
+    "title": "A signed interpretation",
+    "difficulty": "foundations",
+    "prompt": "Interpret 0b11110110 as an 8-bit two’s complement integer. Give a signed decimal value.",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "-10",
+    "reasoning": "The sign bit is set, so subtract 256 from unsigned 246: -10.",
+    "checker": {
+      "kind": "number",
+      "value": -10,
+      "signed": true
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "For an n-bit negative two’s complement pattern, subtract 2^n from its unsigned value."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Reading a signed bit pattern as unsigned",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 2.3 2’s Complement Integers; printed p. 30; PDF p. 59",
+        "fingerprint": "4c2a0de52398d3a06c876d2b1a92ad3c7f7a092cf851d81697c12d1131649919"
+      },
+      {
+        "source": "CS 2110 — Lab 01 Slides",
+        "details": "Slide 56",
+        "fingerprint": "79cf75c19863a4b78d0f28ef6e341dd10546428249e908d533b1bccbcbb48a0b"
+      }
+    ],
+    "hints": [
+      "What does the most significant bit tell you?",
+      "An 8-bit signed value with its top bit set is negative.",
+      "Find its unsigned value, then subtract 2^8."
+    ],
+    "follow_up": {
+      "id": "num-02-follow",
+      "title": "Take it one step further",
+      "prompt": "Interpret 0b11111100 as 8-bit two’s complement.",
+      "answer": "-4",
+      "reasoning": "252 - 256 = -4.",
+      "checker": {
+        "kind": "number",
+        "value": -4,
+        "signed": true
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "For an n-bit negative two’s complement pattern, subtract 2^n from its unsigned value."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 2.3 2’s Complement Integers; printed p. 30; PDF p. 59",
+          "fingerprint": "4c2a0de52398d3a06c876d2b1a92ad3c7f7a092cf851d81697c12d1131649919"
+        },
+        {
+          "source": "CS 2110 — Lab 01 Slides",
+          "details": "Slide 56",
+          "fingerprint": "79cf75c19863a4b78d0f28ef6e341dd10546428249e908d533b1bccbcbb48a0b"
+        }
+      ],
+      "hints": [
+        "What does the most significant bit tell you?",
+        "An 8-bit signed value with its top bit set is negative.",
+        "Find its unsigned value, then subtract 2^8."
+      ],
+      "mistakes": [
+        {
+          "label": "Reading a signed bit pattern as unsigned",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "numbers",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "num-03",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "numbers",
+    "title": "Encode a negative number",
+    "difficulty": "foundations",
+    "prompt": "Encode decimal -13 as an 8-bit two’s complement bit pattern.",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "0b11110011",
+    "reasoning": "Encode +13 as 00001101, invert to 11110010, then add one.",
+    "checker": {
+      "kind": "number",
+      "value": 243,
+      "bits": 8
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Negate a fixed-width integer by inverting its bits and adding one."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Using only bit inversion for negation",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 2.3 2’s Complement Integers; printed p. 30; PDF p. 59",
+        "fingerprint": "4c2a0de52398d3a06c876d2b1a92ad3c7f7a092cf851d81697c12d1131649919"
+      },
+      {
+        "source": "CS 2110 — Lab 01 Slides",
+        "details": "Slide 56",
+        "fingerprint": "79cf75c19863a4b78d0f28ef6e341dd10546428249e908d533b1bccbcbb48a0b"
+      }
+    ],
+    "hints": [
+      "Start by representing the positive magnitude.",
+      "Negation uses both inversion and an addition.",
+      "Write +13 in eight bits, invert every bit, then add one within eight bits."
+    ],
+    "follow_up": {
+      "id": "num-03-follow",
+      "title": "Take it one step further",
+      "prompt": "Encode -6 as an 8-bit two’s complement pattern.",
+      "answer": "0b11111010",
+      "reasoning": "Invert 00000110 and add one.",
+      "checker": {
+        "kind": "number",
+        "value": 250,
+        "bits": 8
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Negate a fixed-width integer by inverting its bits and adding one."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 2.3 2’s Complement Integers; printed p. 30; PDF p. 59",
+          "fingerprint": "4c2a0de52398d3a06c876d2b1a92ad3c7f7a092cf851d81697c12d1131649919"
+        },
+        {
+          "source": "CS 2110 — Lab 01 Slides",
+          "details": "Slide 56",
+          "fingerprint": "79cf75c19863a4b78d0f28ef6e341dd10546428249e908d533b1bccbcbb48a0b"
+        }
+      ],
+      "hints": [
+        "What is +6 in eight bits?",
+        "Negation requires inversion and then adding one.",
+        "Invert the eight-bit representation of +6 and add one within eight bits."
+      ],
+      "mistakes": [
+        {
+          "label": "Using only bit inversion for negation",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "numbers",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "num-04",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "numbers",
+    "title": "Find the lower bound",
+    "difficulty": "apply",
+    "prompt": "What is the smallest signed integer representable in 6-bit two’s complement?",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "-32",
+    "reasoning": "The range is -2^5 through 2^5 - 1.",
+    "checker": {
+      "kind": "number",
+      "value": -32,
+      "signed": true
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "An n-bit two’s complement range starts at -2^(n-1)."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Using the unsigned range for a signed integer",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 2.3 2’s Complement Integers; printed p. 31; PDF p. 60",
+        "fingerprint": "0152bca5772782ec2d52a45e365f27656ca69d722c0adc0a726ce1d3c22800bf"
+      },
+      {
+        "source": "CS 2110 — Lab 01 Slides",
+        "details": "Slide 56",
+        "fingerprint": "79cf75c19863a4b78d0f28ef6e341dd10546428249e908d533b1bccbcbb48a0b"
+      }
+    ],
+    "hints": [
+      "How many bits remain after accounting for the sign position?",
+      "Two’s complement includes one more negative value than positive values.",
+      "Use -2^(n-1) with n = 6."
+    ],
+    "follow_up": {
+      "id": "num-04-follow",
+      "title": "Take it one step further",
+      "prompt": "What is the largest signed 6-bit integer?",
+      "answer": "31",
+      "reasoning": "2^5 - 1 = 31.",
+      "checker": {
+        "kind": "number",
+        "value": 31
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "An n-bit two’s complement range starts at -2^(n-1)."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 2.3 2’s Complement Integers; printed p. 31; PDF p. 60",
+          "fingerprint": "0152bca5772782ec2d52a45e365f27656ca69d722c0adc0a726ce1d3c22800bf"
+        },
+        {
+          "source": "CS 2110 — Lab 01 Slides",
+          "details": "Slide 56",
+          "fingerprint": "79cf75c19863a4b78d0f28ef6e341dd10546428249e908d533b1bccbcbb48a0b"
+        }
+      ],
+      "hints": [
+        "What is different about the largest positive value?",
+        "The top bit is zero in a nonnegative signed value.",
+        "Use 2^(n-1) - 1 with n = 6."
+      ],
+      "mistakes": [
+        {
+          "label": "Using the unsigned range for a signed integer",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "numbers",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "num-05",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "numbers",
+    "title": "Spot signed overflow",
+    "difficulty": "apply",
+    "prompt": "In 8-bit two’s complement, does 01100100 + 00101000 cause signed overflow? Answer yes or no and explain.",
+    "input_help": "Enter yes or no; put your explanation in Show your work.",
+    "answer": "yes",
+    "reasoning": "Both operands are positive (100 and 40), but 140 exceeds 127 and the 8-bit result has its sign bit set.",
+    "checker": {
+      "kind": "choice",
+      "accepted": [
+        "yes",
+        "overflow",
+        "true"
+      ],
+      "requires_reasoning": true,
+      "arithmetic_width": 8
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Adding two positive values overflows when the fixed-width result is negative; signed overflow differs from carry-out."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Confusing signed overflow with a carry-out",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 2.5 Operations on Bits—Part I: Arithmetic; printed p. 37; PDF p. 66",
+        "fingerprint": "5c8c500980aad6771425c9c37c65901ea33914cc2393c0eb5a05ca874bfee5db"
+      },
+      {
+        "source": "CS 2110 — Lab 01 Slides",
+        "details": "Slide 56",
+        "fingerprint": "79cf75c19863a4b78d0f28ef6e341dd10546428249e908d533b1bccbcbb48a0b"
+      }
+    ],
+    "hints": [
+      "Compare the signs of both operands with the result’s sign.",
+      "Two positive signed inputs cannot produce a representable negative sum.",
+      "Add the patterns within eight bits and inspect the top bit."
+    ],
+    "follow_up": {
+      "id": "num-05-follow",
+      "title": "Take it one step further",
+      "prompt": "Does 8-bit 00000101 + 00000110 cause signed overflow?",
+      "answer": "no",
+      "reasoning": "5 + 6 = 11 is representable.",
+      "checker": {
+        "kind": "choice",
+        "accepted": [
+          "no",
+          "false",
+          "no overflow"
+        ]
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Adding two positive values overflows when the fixed-width result is negative; signed overflow differs from carry-out."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 2.5 Operations on Bits—Part I: Arithmetic; printed p. 37; PDF p. 66",
+          "fingerprint": "5c8c500980aad6771425c9c37c65901ea33914cc2393c0eb5a05ca874bfee5db"
+        },
+        {
+          "source": "CS 2110 — Lab 01 Slides",
+          "details": "Slide 56",
+          "fingerprint": "79cf75c19863a4b78d0f28ef6e341dd10546428249e908d533b1bccbcbb48a0b"
+        }
+      ],
+      "hints": [
+        "Compare the signs of both operands with the result’s sign.",
+        "Two positive signed inputs cannot produce a representable negative sum.",
+        "Add the patterns within eight bits and inspect the top bit."
+      ],
+      "mistakes": [
+        {
+          "label": "Confusing signed overflow with a carry-out",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter yes or no; put your explanation in Show your work.",
+      "topic": "numbers",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "num-06",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "numbers",
+    "title": "A bit mask",
+    "difficulty": "apply",
+    "prompt": "Compute 0b10110110 AND 0b00001111. Give the resulting unsigned value.",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "6",
+    "reasoning": "Only the low four bits survive; the result is 00000110.",
+    "checker": {
+      "kind": "number",
+      "value": 6
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Bitwise AND produces a one only when both corresponding input bits are one."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Treating bitwise AND as addition",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 2.6 Operations on Bits—Part II: Logical Operations; printed p. 39; PDF p. 68",
+        "fingerprint": "a6153f38f9e0a4bfac4f3e99ba0d60d518a029759e181dc7bcd32e386e54716c"
+      },
+      {
+        "source": "CS 2110 — Lab 03 Slides",
+        "details": "Slide 17",
+        "fingerprint": "8d1a5ce5925d7f8dc09987d4dae6afd19ece9057291ffa78458c8295e70aa74f"
+      }
+    ],
+    "hints": [
+      "Which positions are permitted by the second operand?",
+      "AND keeps a bit only when both inputs have a 1 there.",
+      "The upper four positions become zero; apply AND to the lower four."
+    ],
+    "follow_up": {
+      "id": "num-06-follow",
+      "title": "Take it one step further",
+      "prompt": "Compute 0b10110110 AND 0b11110000.",
+      "answer": "176",
+      "reasoning": "The high nibble remains: 10110000.",
+      "checker": {
+        "kind": "number",
+        "value": 176
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Bitwise AND produces a one only when both corresponding input bits are one."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 2.6 Operations on Bits—Part II: Logical Operations; printed p. 39; PDF p. 68",
+          "fingerprint": "a6153f38f9e0a4bfac4f3e99ba0d60d518a029759e181dc7bcd32e386e54716c"
+        },
+        {
+          "source": "CS 2110 — Lab 03 Slides",
+          "details": "Slide 17",
+          "fingerprint": "8d1a5ce5925d7f8dc09987d4dae6afd19ece9057291ffa78458c8295e70aa74f"
+        }
+      ],
+      "hints": [
+        "Which positions does the high-nibble mask keep?",
+        "Apply AND separately to corresponding bits.",
+        "Zero the low four positions and keep the high four input positions."
+      ],
+      "mistakes": [
+        {
+          "label": "Treating bitwise AND as addition",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "numbers",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "mem-01",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "memory",
+    "title": "Count the locations",
+    "difficulty": "foundations",
+    "prompt": "A memory uses 12-bit addresses. How many distinct locations can it address?",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "4096",
+    "reasoning": "There are 2^12 distinct address patterns.",
+    "checker": {
+      "kind": "number",
+      "value": 4096,
+      "unit": "locations"
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "n address bits identify 2^n distinct locations, independent of addressability."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Confusing address width with addressability",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+        "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+      },
+      {
+        "source": "CS 2110 — Lab 06 Slides - Copy",
+        "details": "Slide 24",
+        "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+      }
+    ],
+    "hints": [
+      "What does one distinct address identify?",
+      "Count all combinations of twelve binary digits.",
+      "Write 2^12 and evaluate it."
+    ],
+    "follow_up": {
+      "id": "mem-01-follow",
+      "title": "Take it one step further",
+      "prompt": "How many locations do 10-bit addresses identify?",
+      "answer": "1024",
+      "reasoning": "2^10 = 1024.",
+      "checker": {
+        "kind": "number",
+        "value": 1024,
+        "unit": "locations"
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "n address bits identify 2^n distinct locations, independent of addressability."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+          "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+        },
+        {
+          "source": "CS 2110 — Lab 06 Slides - Copy",
+          "details": "Slide 24",
+          "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+        }
+      ],
+      "hints": [
+        "How many combinations can ten binary digits represent?",
+        "One distinct address identifies one location.",
+        "Evaluate 2^10 locations."
+      ],
+      "mistakes": [
+        {
+          "label": "Confusing address width with addressability",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "memory",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "mem-02",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "memory",
+    "title": "Bits at one address",
+    "difficulty": "foundations",
+    "prompt": "A memory stores 16 bits at each address. What is its addressability in bits?",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "16",
+    "reasoning": "Addressability is the number of bits stored in one addressable location.",
+    "checker": {
+      "kind": "number",
+      "value": 16,
+      "unit": "bits"
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Addressability describes bits per location, not the number of locations."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Using address count as addressability",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+        "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+      },
+      {
+        "source": "CS 2110 — Lab 06 Slides - Copy",
+        "details": "Slide 24",
+        "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+      }
+    ],
+    "hints": [
+      "Are you being asked about one location or the entire memory?",
+      "Addressability measures the amount stored at one address.",
+      "Use the number of bits stated for each individual location."
+    ],
+    "follow_up": {
+      "id": "mem-02-follow",
+      "title": "Take it one step further",
+      "prompt": "A memory stores 8 bits per address. Give its addressability in bits.",
+      "answer": "8",
+      "reasoning": "Each location stores eight bits.",
+      "checker": {
+        "kind": "number",
+        "value": 8,
+        "unit": "bits"
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Addressability describes bits per location, not the number of locations."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+          "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+        },
+        {
+          "source": "CS 2110 — Lab 06 Slides - Copy",
+          "details": "Slide 24",
+          "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+        }
+      ],
+      "hints": [
+        "Are you being asked about one location or the entire memory?",
+        "Addressability measures the amount stored at one address.",
+        "Use the number of bits stated for each individual location."
+      ],
+      "mistakes": [
+        {
+          "label": "Using address count as addressability",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "memory",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "mem-03",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "memory",
+    "title": "Total capacity",
+    "difficulty": "foundations",
+    "prompt": "A memory has 10-bit addresses and stores 16 bits per location. Give its total capacity in bytes. Assume 8 bits per byte.",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "2048 bytes",
+    "reasoning": "2^10 locations × 16 bits/location ÷ 8 bits/byte = 2048 bytes.",
+    "checker": {
+      "kind": "number",
+      "value": 2048,
+      "unit": "bytes"
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Multiply the number of locations by bits per location, then convert bits to bytes."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Reporting bits as bytes",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+        "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+      },
+      {
+        "source": "CS 2110 — Lab 06 Slides - Copy",
+        "details": "Slide 24",
+        "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+      }
+    ],
+    "hints": [
+      "Which two quantities determine total storage?",
+      "Multiply the number of addresses by the bits stored at each address.",
+      "Set up 2^10 × 16 / 8 bytes, then evaluate."
+    ],
+    "follow_up": {
+      "id": "mem-03-follow",
+      "title": "Take it one step further",
+      "prompt": "Give the byte capacity for 8-bit addresses and 32 bits per location.",
+      "answer": "1024 bytes",
+      "reasoning": "2^8 × 32 / 8 = 1024.",
+      "checker": {
+        "kind": "number",
+        "value": 1024,
+        "unit": "bytes"
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Multiply the number of locations by bits per location, then convert bits to bytes."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+          "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+        },
+        {
+          "source": "CS 2110 — Lab 06 Slides - Copy",
+          "details": "Slide 24",
+          "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+        }
+      ],
+      "hints": [
+        "How many locations do eight address bits identify?",
+        "Multiply location count by bits per location, then convert to bytes.",
+        "Set up 2^8 × 32 / 8 bytes."
+      ],
+      "mistakes": [
+        {
+          "label": "Reporting bits as bytes",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "memory",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "mem-04",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "memory",
+    "title": "Bytes and kibibytes",
+    "difficulty": "apply",
+    "prompt": "A byte-addressable memory has 15-bit addresses. Give its total capacity in KiB, with 1 KiB = 1024 bytes.",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "32 KiB",
+    "reasoning": "2^15 bytes / 1024 = 32 KiB.",
+    "checker": {
+      "kind": "number",
+      "value": 32,
+      "unit": "KiB"
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Byte-addressable means one byte per address; KiB denotes 1024 bytes."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Using decimal kilobytes for binary kibibytes",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+        "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+      },
+      {
+        "source": "CS 2110 — Lab 06 Slides - Copy",
+        "details": "Slide 24",
+        "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+      }
+    ],
+    "hints": [
+      "How many bytes are stored at each address?",
+      "For byte-addressable memory, the location count is also the byte count.",
+      "Convert 2^15 bytes to KiB by dividing by 2^10."
+    ],
+    "follow_up": {
+      "id": "mem-04-follow",
+      "title": "Take it one step further",
+      "prompt": "How many KiB does a byte-addressable memory with 16-bit addresses contain?",
+      "answer": "64 KiB",
+      "reasoning": "2^16 / 1024 = 64.",
+      "checker": {
+        "kind": "number",
+        "value": 64,
+        "unit": "KiB"
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Byte-addressable means one byte per address; KiB denotes 1024 bytes."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+          "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+        },
+        {
+          "source": "CS 2110 — Lab 06 Slides - Copy",
+          "details": "Slide 24",
+          "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+        }
+      ],
+      "hints": [
+        "How many bytes do sixteen address bits identify here?",
+        "Byte-addressable means one byte at each address.",
+        "Convert 2^16 bytes to KiB by dividing by 2^10."
+      ],
+      "mistakes": [
+        {
+          "label": "Using decimal kilobytes for binary kibibytes",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "memory",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "mem-05",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "memory",
+    "title": "LC-3 addressable capacity",
+    "difficulty": "apply",
+    "prompt": "The LC-3 has 16-bit addresses and 16-bit words. Ignoring reserved addresses, what is its total addressable capacity in bytes?",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "131072 bytes",
+    "reasoning": "2^16 words × 2 bytes/word = 131072 bytes.",
+    "checker": {
+      "kind": "number",
+      "value": 131072,
+      "unit": "bytes"
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "LC-3 is word-addressable: each of its 2^16 locations stores sixteen bits."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Assuming the LC-3 is byte-addressable",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 5.1 The ISA: Overview; printed p. 146; PDF p. 175",
+        "fingerprint": "c3c8fb0ffdea92641aa4fb9467f3f3d774df9db14ccd6f7936bb838a7c734da6"
+      },
+      {
+        "source": "CS 2110 — Lab 06 Slides - Copy",
+        "details": "Slide 24",
+        "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+      }
+    ],
+    "hints": [
+      "Does an LC-3 address identify a byte or a word?",
+      "Each word contains sixteen bits, or two bytes.",
+      "Multiply the number of sixteen-bit addresses by two bytes per word."
+    ],
+    "follow_up": {
+      "id": "mem-05-follow",
+      "title": "Take it one step further",
+      "prompt": "How many bytes are in 256 LC-3 words?",
+      "answer": "512 bytes",
+      "reasoning": "256 × 2 = 512.",
+      "checker": {
+        "kind": "number",
+        "value": 512,
+        "unit": "bytes"
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "LC-3 is word-addressable: each of its 2^16 locations stores sixteen bits."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 5.1 The ISA: Overview; printed p. 146; PDF p. 175",
+          "fingerprint": "c3c8fb0ffdea92641aa4fb9467f3f3d774df9db14ccd6f7936bb838a7c734da6"
+        },
+        {
+          "source": "CS 2110 — Lab 06 Slides - Copy",
+          "details": "Slide 24",
+          "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+        }
+      ],
+      "hints": [
+        "How many bytes are in one LC-3 word?",
+        "An LC-3 word is sixteen bits.",
+        "Multiply 256 words by the byte count of one word."
+      ],
+      "mistakes": [
+        {
+          "label": "Assuming the LC-3 is byte-addressable",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "memory",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "mem-06",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "memory",
+    "title": "Same width, different storage",
+    "difficulty": "apply",
+    "prompt": "Two memories both have 12-bit addresses. A is byte-addressable; B stores 16 bits per location. Explain why B has twice the capacity even though their address widths match.",
+    "input_help": "Write a short explanation in Final answer; Show your work is optional.",
+    "answer": "They have the same 4096 locations, but B stores two bytes per location while A stores one.",
+    "reasoning": "Address width fixes the location count; addressability determines storage per location.",
+    "checker": {
+      "kind": "explanation"
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Explain equal address counts and twice as many bits per location, distinguishing address space from addressability."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Assuming equal address widths imply equal capacities",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+        "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+      },
+      {
+        "source": "CS 2110 — Lab 06 Slides - Copy",
+        "details": "Slide 24",
+        "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+      }
+    ],
+    "hints": [
+      "What is the same between A and B, and what differs?",
+      "Separate the number of locations from the storage in each location.",
+      "Write capacity = number of locations × bits per location for both memories."
+    ],
+    "follow_up": {
+      "id": "mem-06-follow",
+      "title": "Take it one step further",
+      "prompt": "A and B have the same address count; B stores 32 bits per location and A stores 8. Explain their capacity ratio.",
+      "answer": "B has four times the capacity.",
+      "reasoning": "The shared address count cancels; 32/8 = 4.",
+      "checker": {
+        "kind": "explanation"
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Explain equal address counts and twice as many bits per location, distinguishing address space from addressability."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+          "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
+        },
+        {
+          "source": "CS 2110 — Lab 06 Slides - Copy",
+          "details": "Slide 24",
+          "fingerprint": "c32a507c03edff8ecd38e21b65931f925b2134a8c2c4b09b27231981ff37857e"
+        }
+      ],
+      "hints": [
+        "What is the same between A and B, and what differs?",
+        "Separate the number of locations from the storage in each location.",
+        "Write capacity = number of locations × bits per location for both memories."
+      ],
+      "mistakes": [
+        {
+          "label": "Assuming equal address widths imply equal capacities",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Write a short explanation in Final answer; Show your work is optional.",
+      "topic": "memory",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "lc3-01",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "lc3",
+    "title": "Trace ADD",
+    "difficulty": "foundations",
+    "prompt": "Initially R1 = 7. Execute ADD R0, R1, #-3. Give the signed decimal value in R0.",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "4",
+    "reasoning": "ADD combines R1 with the sign-extended immediate: 7 - 3 = 4.",
+    "checker": {
+      "kind": "number",
+      "value": 4,
+      "signed": true
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "ADD uses the source register and sign-extended immediate, writing the destination register."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Adding the destination’s old value",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 5.2 Operate Instructions; printed p. 152; PDF p. 181",
+        "fingerprint": "c17541f4df39b1c0951575cd5668e2ed55cf98016ebefa129566f407a7085dc6"
+      },
+      {
+        "source": "CS 2110 — Lab 09 Slides",
+        "details": "Slide 48",
+        "fingerprint": "c185aaf5fcdf88559fe53d01c85a675b34984b5eae7c7206a73fc3f8a84ea721"
+      }
+    ],
+    "hints": [
+      "Which register is the source, and which is the destination?",
+      "The immediate operand is a signed value.",
+      "Substitute the source value into R0 = R1 + (-3)."
+    ],
+    "follow_up": {
+      "id": "lc3-01-follow",
+      "title": "Take it one step further",
+      "prompt": "Initially R1 = -2. Execute ADD R0, R1, #5. Give R0.",
+      "answer": "3",
+      "reasoning": "-2 + 5 = 3.",
+      "checker": {
+        "kind": "number",
+        "value": 3,
+        "signed": true
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "ADD uses the source register and sign-extended immediate, writing the destination register."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 5.2 Operate Instructions; printed p. 152; PDF p. 181",
+          "fingerprint": "c17541f4df39b1c0951575cd5668e2ed55cf98016ebefa129566f407a7085dc6"
+        },
+        {
+          "source": "CS 2110 — Lab 09 Slides",
+          "details": "Slide 48",
+          "fingerprint": "c185aaf5fcdf88559fe53d01c85a675b34984b5eae7c7206a73fc3f8a84ea721"
+        }
+      ],
+      "hints": [
+        "What value is currently in the source register?",
+        "ADD includes the signed immediate in its sum.",
+        "Evaluate R0 = -2 + 5."
+      ],
+      "mistakes": [
+        {
+          "label": "Adding the destination’s old value",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "lc3",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "lc3-02",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "lc3",
+    "title": "Trace NOT",
+    "difficulty": "foundations",
+    "prompt": "Initially R1 = x00F0. Execute NOT R0, R1. Give the resulting 16-bit pattern in hexadecimal.",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "xFF0F",
+    "reasoning": "Invert each of the sixteen bits; 00F0 becomes FF0F.",
+    "checker": {
+      "kind": "number",
+      "value": 65295,
+      "bits": 16
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "NOT inverts every bit within the fixed sixteen-bit word."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Ignoring leading bits when complementing",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 5.2 Operate Instructions; printed p. 151; PDF p. 180",
+        "fingerprint": "45756eef4d1a0ef4b353586cba9ade891b46b1386cc6d96382ee5e00c9d0edb9"
+      },
+      {
+        "source": "CS 2110 — Structs & Strings",
+        "details": "Slide 2",
+        "fingerprint": "faeb709d441e33936e3a4175346e40128e81ee4c2cb282cde7b5cecb9a43cc6c"
+      }
+    ],
+    "hints": [
+      "How wide is an LC-3 register?",
+      "Invert all sixteen bits, including leading zeroes.",
+      "Write four hex digits for the input and replace each nibble by its bitwise complement."
+    ],
+    "follow_up": {
+      "id": "lc3-02-follow",
+      "title": "Take it one step further",
+      "prompt": "Initially R1 = x0000. Execute NOT R0, R1. Give the result.",
+      "answer": "xFFFF",
+      "reasoning": "All sixteen zero bits become ones.",
+      "checker": {
+        "kind": "number",
+        "value": 65535,
+        "bits": 16
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "NOT inverts every bit within the fixed sixteen-bit word."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 5.2 Operate Instructions; printed p. 151; PDF p. 180",
+          "fingerprint": "45756eef4d1a0ef4b353586cba9ade891b46b1386cc6d96382ee5e00c9d0edb9"
+        },
+        {
+          "source": "CS 2110 — Structs & Strings",
+          "details": "Slide 2",
+          "fingerprint": "faeb709d441e33936e3a4175346e40128e81ee4c2cb282cde7b5cecb9a43cc6c"
+        }
+      ],
+      "hints": [
+        "How wide is an LC-3 register?",
+        "Invert all sixteen bits, including leading zeroes.",
+        "Write four hex digits for the input and replace each nibble by its bitwise complement."
+      ],
+      "mistakes": [
+        {
+          "label": "Ignoring leading bits when complementing",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "lc3",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "lc3-03",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "lc3",
+    "title": "Condition codes",
+    "difficulty": "foundations",
+    "prompt": "Initially R1 = 1. Execute ADD R0, R1, #-1. Which single condition code is set: N, Z, or P?",
+    "input_help": "Enter N, Z, or P; explain your trace below.",
+    "answer": "Z",
+    "reasoning": "The result is zero, so Z is set and N/P are clear.",
+    "checker": {
+      "kind": "choice",
+      "accepted": [
+        "z",
+        "zero"
+      ]
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Condition codes describe the last qualifying instruction result: negative, zero, or positive."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Using an operand sign instead of the result",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 5.1 The ISA: Overview; printed p. 151; PDF p. 180",
+        "fingerprint": "a6494824d21ba1f468ecdccb39b967ac6a63029d71127c9afbeee373413b7789"
+      },
+      {
+        "source": "CS 2110 — Lab 10 Slides",
+        "details": "Slide 52",
+        "fingerprint": "2d113c969b75a3d3989070217d52e6681962445066e51801110a307b7eddf1a0"
+      }
+    ],
+    "hints": [
+      "Compute the register result first.",
+      "Classify that result as negative, zero, or positive.",
+      "For ADD, the destination value determines the condition code."
+    ],
+    "follow_up": {
+      "id": "lc3-03-follow",
+      "title": "Take it one step further",
+      "prompt": "Initially R1 = 1. ADD R0, R1, #-2 executes. Which condition code is set?",
+      "answer": "N",
+      "reasoning": "The result is -1.",
+      "checker": {
+        "kind": "choice",
+        "accepted": [
+          "n",
+          "negative"
+        ]
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Condition codes describe the last qualifying instruction result: negative, zero, or positive."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 5.1 The ISA: Overview; printed p. 151; PDF p. 180",
+          "fingerprint": "a6494824d21ba1f468ecdccb39b967ac6a63029d71127c9afbeee373413b7789"
+        },
+        {
+          "source": "CS 2110 — Lab 10 Slides",
+          "details": "Slide 52",
+          "fingerprint": "2d113c969b75a3d3989070217d52e6681962445066e51801110a307b7eddf1a0"
+        }
+      ],
+      "hints": [
+        "Compute the register result first.",
+        "Classify that result as negative, zero, or positive.",
+        "For ADD, the destination value determines the condition code."
+      ],
+      "mistakes": [
+        {
+          "label": "Using an operand sign instead of the result",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter N, Z, or P; explain your trace below.",
+      "topic": "lc3",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "lc3-04",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "lc3",
+    "title": "PC-relative addressing",
+    "difficulty": "apply",
+    "prompt": "An LD instruction is stored at x3000 and has signed PCoffset9 = -3. What effective address does it read? Give a hexadecimal address.",
+    "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+    "answer": "x2FFE",
+    "reasoning": "Fetch increments PC to x3001; x3001 - 3 = x2FFE.",
+    "checker": {
+      "kind": "number",
+      "value": 12286,
+      "bits": 16
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "PC-relative addressing adds a sign-extended offset to the incremented PC."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Using the instruction address instead of the incremented PC",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 5.3 Data Movement Instructions; printed p. 156; PDF p. 185",
+        "fingerprint": "238f93d69d6ed21d105cf6191b997ef7d729f27721a7765060b4613aec94e405"
+      },
+      {
+        "source": "CS 2110 — Lab 13 Slides",
+        "details": "Slide 9",
+        "fingerprint": "9e4f983983250f5d7c38dc8d3691e1c29e53c2e9572d30763a88977218a19d29"
+      }
+    ],
+    "hints": [
+      "Which PC value is used after instruction fetch?",
+      "The PC advances before the PC-relative offset is applied.",
+      "Start from x3001, then apply the signed offset of -3."
+    ],
+    "follow_up": {
+      "id": "lc3-04-follow",
+      "title": "Take it one step further",
+      "prompt": "An LD at x3000 has PCoffset9 = +4. What effective address does it read?",
+      "answer": "x3005",
+      "reasoning": "x3001 + 4 = x3005.",
+      "checker": {
+        "kind": "number",
+        "value": 12293,
+        "bits": 16
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "PC-relative addressing adds a sign-extended offset to the incremented PC."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 5.3 Data Movement Instructions; printed p. 156; PDF p. 185",
+          "fingerprint": "238f93d69d6ed21d105cf6191b997ef7d729f27721a7765060b4613aec94e405"
+        },
+        {
+          "source": "CS 2110 — Lab 13 Slides",
+          "details": "Slide 9",
+          "fingerprint": "9e4f983983250f5d7c38dc8d3691e1c29e53c2e9572d30763a88977218a19d29"
+        }
+      ],
+      "hints": [
+        "Which PC value is used after fetch?",
+        "Start with the incremented PC.",
+        "Add the offset +4 to x3001."
+      ],
+      "mistakes": [
+        {
+          "label": "Using the instruction address instead of the incremented PC",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
+      "topic": "lc3",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "lc3-05",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "lc3",
+    "title": "Write a bounded snippet",
+    "difficulty": "apply",
+    "prompt": "Write up to 8 straight-line LC-3 instructions that set R0 to -5 for ANY initial register values. Supported instructions: ADD, AND, NOT; registers R0–R7; decimal immediates #-16 through #15. No labels or I/O.",
+    "input_help": "Enter an LC-3 snippet in Final answer. Use Show your work to explain why it works.",
+    "answer": "AND R0, R0, #0\nADD R0, R0, #-5",
+    "reasoning": "Clear R0 to remove dependence on its initial value, then add -5.",
+    "checker": {
+      "kind": "lc3_program",
+      "register": 0,
+      "value": 65531,
+      "max_steps": 8
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Clear or otherwise eliminate dependence on initial registers and produce the requested sixteen-bit value for every initial state."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Assuming a register initially contains zero",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 5.2 Operate Instructions; printed p. 153; PDF p. 182",
+        "fingerprint": "2a35ca80760e6214a3464530b6294fe04d67faa336bed3e977528dc2e90eab8a"
+      },
+      {
+        "source": "CS 2110 — Lab 09 Slides",
+        "details": "Slide 48",
+        "fingerprint": "c185aaf5fcdf88559fe53d01c85a675b34984b5eae7c7206a73fc3f8a84ea721"
+      }
+    ],
+    "hints": [
+      "How can you remove dependence on the old register contents?",
+      "AND with a zero immediate clears a register.",
+      "After making a known zero, use a signed immediate to build the requested value."
+    ],
+    "follow_up": {
+      "id": "lc3-05-follow",
+      "title": "Take it one step further",
+      "prompt": "Write up to 8 supported instructions setting R0 to 9 for any initial state.",
+      "answer": "AND R0, R0, #0\nADD R0, R0, #9",
+      "reasoning": "Clear R0, then add 9.",
+      "checker": {
+        "kind": "lc3_program",
+        "register": 0,
+        "value": 9,
+        "max_steps": 8
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Clear or otherwise eliminate dependence on initial registers and produce the requested sixteen-bit value for every initial state."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 5.2 Operate Instructions; printed p. 153; PDF p. 182",
+          "fingerprint": "2a35ca80760e6214a3464530b6294fe04d67faa336bed3e977528dc2e90eab8a"
+        },
+        {
+          "source": "CS 2110 — Lab 09 Slides",
+          "details": "Slide 48",
+          "fingerprint": "c185aaf5fcdf88559fe53d01c85a675b34984b5eae7c7206a73fc3f8a84ea721"
+        }
+      ],
+      "hints": [
+        "How can you remove dependence on the old register contents?",
+        "AND with a zero immediate clears a register.",
+        "After making a known zero, use a signed immediate to build the requested value."
+      ],
+      "mistakes": [
+        {
+          "label": "Assuming a register initially contains zero",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Enter an LC-3 snippet in Final answer. Use Show your work to explain why it works.",
+      "topic": "lc3",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  },
+  {
+    "id": "lc3-06",
+    "version": "2026-11-14.3",
+    "course": "cs2110",
+    "topic": "lc3",
+    "title": "LD versus LEA",
+    "difficulty": "apply",
+    "prompt": "An instruction at x3000 targets x3010, where memory contains x0042. Explain what LD R0, TARGET and LEA R0, TARGET place in R0, and why.",
+    "input_help": "Write a short explanation in Final answer; Show your work is optional.",
+    "answer": "LD loads x0042; LEA loads x3010.",
+    "reasoning": "LD reads the contents at the effective address; LEA writes the effective address itself.",
+    "checker": {
+      "kind": "explanation"
+    },
+    "rubric": [
+      {
+        "id": "concept",
+        "description": "Distinguish memory contents x0042 loaded by LD from address x3010 loaded by LEA."
+      }
+    ],
+    "mistakes": [
+      {
+        "label": "Confusing an address with the value stored there",
+        "criterion": "concept"
+      }
+    ],
+    "references": [
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 5.2 Operate Instructions; printed p. 154; PDF p. 183",
+        "fingerprint": "74767c813bae297f12a6fec14d3a44091fc3447f854d90452352f126802e3062"
+      },
+      {
+        "source": "CS 2110 — Lab 10 Slides",
+        "details": "Slide 44",
+        "fingerprint": "9bf206e6ba9a81248aac7d8680585cd68f83963dc161de2a232fd54c28982dde"
+      },
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 5.3 Data Movement Instructions; printed p. 156; PDF p. 185",
+        "fingerprint": "238f93d69d6ed21d105cf6191b997ef7d729f27721a7765060b4613aec94e405"
+      }
+    ],
+    "hints": [
+      "Are the address and the contents at that address the same thing?",
+      "LD performs a memory read; LEA computes an address.",
+      "Name the target address separately from the value stored at that target."
+    ],
+    "follow_up": {
+      "id": "lc3-06-follow",
+      "title": "Take it one step further",
+      "prompt": "TARGET is at x3020 and holds x0007. Explain the values loaded by LD and LEA.",
+      "answer": "LD loads x0007; LEA loads x3020.",
+      "reasoning": "LD uses the contents; LEA uses the address.",
+      "checker": {
+        "kind": "explanation"
+      },
+      "rubric": [
+        {
+          "id": "concept",
+          "description": "Distinguish memory contents x0042 loaded by LD from address x3010 loaded by LEA."
+        }
+      ],
+      "references": [
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 5.2 Operate Instructions; printed p. 154; PDF p. 183",
+          "fingerprint": "74767c813bae297f12a6fec14d3a44091fc3447f854d90452352f126802e3062"
+        },
+        {
+          "source": "CS 2110 — Lab 10 Slides",
+          "details": "Slide 44",
+          "fingerprint": "9bf206e6ba9a81248aac7d8680585cd68f83963dc161de2a232fd54c28982dde"
+        },
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 5.3 Data Movement Instructions; printed p. 156; PDF p. 185",
+          "fingerprint": "238f93d69d6ed21d105cf6191b997ef7d729f27721a7765060b4613aec94e405"
+        }
+      ],
+      "hints": [
+        "Are the address and the contents at that address the same thing?",
+        "LD performs a memory read; LEA computes an address.",
+        "Name the target address separately from the value stored at that target."
+      ],
+      "mistakes": [
+        {
+          "label": "Confusing an address with the value stored there",
+          "criterion": "concept"
+        }
+      ],
+      "input_help": "Write a short explanation in Final answer; Show your work is optional.",
+      "topic": "lc3",
+      "course": "cs2110",
+      "version": "2026-11-14.3",
+      "difficulty": "extend"
+    }
+  }
+]

@@ -61,6 +61,7 @@ def create_app(retriever=None, model=None, service_token=None, rate_limit=10, al
             logger.error('Model could not be configured; verify model settings')
         yield
     app=FastAPI(title='Backbone API',lifespan=lifespan,docs_url=None,redoc_url=None)
+    app.state.resources=state
     def configured(course): return course in courses and state['model'] is not None and (bool(token) or allow_unauthenticated)
     @app.get('/health')
     async def health(): return {'status':'ok', 'commit':os.getenv('BACKBONE_COMMIT') or os.getenv('VERCEL_GIT_COMMIT_SHA') or os.getenv('RENDER_GIT_COMMIT'), 'instance':os.getenv('VERCEL_DEPLOYMENT_ID') or os.getenv('RENDER_INSTANCE_ID')}

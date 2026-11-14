@@ -2,3 +2,5 @@ fastapi==0.162.5
 httpx==0.28.1
 uvicorn==0.54.0
 vercel-blob==0.5.0
+psycopg[binary]==3.2.13
+z3-solver==4.15.4.0

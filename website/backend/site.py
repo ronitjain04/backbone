@@ -1,5 +1,7 @@
 """Public website gateway. Course data and service credentials stay in-process."""
 import os
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 import httpx
@@ -7,17 +9,27 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from .app import create_app
+from .practice.routes import create_router
+from .practice.store import Store
+from .practice.bank import load_bank
 
 MAX_REQUEST_BYTES = 128 * 1024
 
 
-def create_site(backend=None, *, token=None, public_dir=None):
+def create_site(backend=None, *, token=None, public_dir=None, practice_store=None):
     backend = backend if backend is not None else create_app()
     token = os.getenv('BACKEND_TOKEN', '') if token is None else token
+    practice_store=practice_store or (Store(os.environ['DATABASE_URL']) if os.getenv('DATABASE_URL') else None)
     public_dir = public_dir or Path(__file__).resolve().parent.parent / 'public'
 
     @asynccontextmanager
     async def lifespan(app):
+        if practice_store is not None and os.getenv('PRACTICE_AUTO_MIGRATE')=='1':
+            try:
+                await asyncio.to_thread(practice_store.migrate)
+                await asyncio.to_thread(practice_store.seed,load_bank())
+            except Exception:
+                logging.getLogger(__name__).warning('Practice initialization unavailable; study chat remains available')
         async with backend.router.lifespan_context(backend):
             yield
 
@@ -25,6 +37,16 @@ def create_site(backend=None, *, token=None, public_dir=None):
 
     @app.middleware('http')
     async def response_headers(request, call_next):
+        if request.url.path.startswith('/api/practice') and request.method not in ('GET','HEAD'):
+            expected = str(request.base_url).rstrip('/')
+            if request.headers.get('origin') != expected or request.headers.get('sec-fetch-site') == 'cross-site':
+                return JSONResponse({'detail':'Use practice from this website.'},status_code=403)
+            body = bytearray()
+            async for chunk in request.stream():
+                if len(body)+len(chunk)>32768:
+                    return JSONResponse({'detail':'Practice submission is too large.'},status_code=413)
+                body.extend(chunk)
+            request._body=bytes(body)
         if request.url.path == '/api/chat' and request.method != 'POST':
             return JSONResponse({'detail': 'Method not allowed'}, status_code=405)
         response = await call_next(request)
@@ -67,6 +89,8 @@ def create_site(backend=None, *, token=None, public_dir=None):
         if result.status_code == 422:
             return JSONResponse({'detail': 'Enter a valid question, course and conversation context.'}, status_code=400)
         return JSONResponse(result.json(), status_code=result.status_code)
+
+    app.include_router(create_router(practice_store,resources=lambda:getattr(backend.state,'resources',{})))
 
     # Vercel serves public/ from its CDN and may omit it from the function.
     # Keep a local static mount only when those files exist at runtime.

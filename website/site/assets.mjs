@@ -10,11 +10,13 @@ export const securityHeaders={
 
 export async function createAssets(){
  const assets={};
- for(const [path,type] of [['/index.html','text/html; charset=utf-8'],['/styles.css','text/css; charset=utf-8']]){
+ for(const [path,type] of [['/index.html','text/html; charset=utf-8'],['/practice.html','text/html; charset=utf-8'],['/styles.css','text/css; charset=utf-8']]){
   assets[path]={type,body:await readFile(new URL('.'+path,import.meta.url),'utf8')};
  }
  const bundle=await build({entryPoints:[new URL('app.js',import.meta.url).pathname],bundle:true,write:false,minify:true,legalComments:'inline',format:'esm',platform:'browser',target:'es2022'});
  assets['/app.js']={type:'text/javascript; charset=utf-8',body:bundle.outputFiles[0].text};
+ const practice=await build({entryPoints:[new URL('practice.mjs',import.meta.url).pathname],bundle:true,write:false,minify:true,format:'esm',platform:'browser',target:'es2022'});
+ assets['/practice.js']={type:'text/javascript; charset=utf-8',body:practice.outputFiles[0].text};
  const katexRoot=new URL('node_modules/katex/dist/',import.meta.url);
  const mathCss=(await readFile(new URL('katex.min.css',katexRoot),'utf8'))
   .replace(/src:(url\([^)]+\.woff2\) format\("woff2"\)),url\([^)]+\.woff\) format\("woff"\),url\([^)]+\.ttf\) format\("truetype"\)/g,'src:$1');
