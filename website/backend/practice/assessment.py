@@ -59,26 +59,28 @@ async def assess(exercise, answer, work, chunks, model, attempts=None):
     student_text=answer+'\n'+work if exercise['checker']['kind']=='explanation' else work
     if not student_text.strip():return verdict('needs_clarification','Show one intermediate step before we infer anything about your reasoning.',clarification='How did you arrive at that result?')
     content=json.dumps({'exercise':exercise['prompt'],'expected_answer_for_assessor_only':exercise['answer'],
-        'rubric':exercise['rubric'],'final_answer':answer,'work':work,'prior_attempts':(attempts or [])[-5:],
+        'rubric':exercise['rubric'],'final_answer':answer,'work':work,'prior_attempts':[{'kind':a['kind'],'input':{k:str(v)[:1000] for k,v in a['input'].items()},'outcome':(a.get('result') or {}).get('status'),'previous_hint':(a.get('result') or {}).get('message','')[:500]} for a in (attempts or [])[-5:]],
         'sources':[dict(c,id=i) for i,c in enumerate(chunks,1)]},ensure_ascii=False)
     try:
         async with asyncio.timeout(45):raw=await model.assess_practice(content)
         data=json.loads(raw)
-        return validate_assessment(data,exercise,student_text,chunks)
+        return dict(validate_assessment(data,exercise,student_text,chunks),model=getattr(model,'model','configured model'),rubric_version=exercise['version'])
     except (ValueError,TypeError,KeyError,AttributeError):
         return verdict('needs_clarification','I could not verify that interpretation against your work and the cited material.',clarification='Could you state one step at a time, including the units or register values?')
     except Exception:
         return verdict('unavailable','The explanation assessor is temporarily unavailable. Your work is saved; retry later.')
 
 
-def first_arithmetic_error(work):
+def first_arithmetic_error(work,width=None):
     """First demonstrably false equality; unparseable prose is not evidence."""
     from .checking import parse_number, Unclear
     for line in work.splitlines():
         if line.count('=')!=1 or len(line)>300:continue
         left,right=line.split('=')
         try:
-            if parse_number(left)!=parse_number(right):
+            a,b=parse_number(left),parse_number(right)
+            equivalent=a==b or (width and a.denominator==b.denominator==1 and (a-b)%(2**width)==0)
+            if not equivalent:
                 return {'label':'An arithmetic step does not hold','criterion':'concept','evidence':line,'source_ids':[], 'method':'deterministic equality check'}
         except Unclear:continue
     return None

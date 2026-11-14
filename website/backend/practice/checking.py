@@ -15,24 +15,30 @@ def parse_number(text):
     try:tree=ast.parse(text,mode='eval')
     except (SyntaxError,ValueError):raise Unclear('Use numbers and arithmetic operators.') from None
     if len(list(ast.walk(tree)))>80:raise Unclear('Use a shorter calculation.')
+    def bounded(value):
+        if value.numerator.bit_length()>256 or value.denominator.bit_length()>256:
+            raise Unclear('This calculation is too large to check. Simplify it first.')
+        return value
     def visit(node):
         if isinstance(node,ast.Expression):return visit(node.body)
         if isinstance(node,ast.Constant) and type(node.value) in (int,float):
             if abs(node.value)>2**64:raise Unclear('This value is outside the exercise range.')
-            return Fraction(str(node.value))
+            return bounded(Fraction(str(node.value)))
         if isinstance(node,ast.UnaryOp) and isinstance(node.op,(ast.UAdd,ast.USub)):
             return visit(node.operand)*(1 if isinstance(node.op,ast.UAdd) else -1)
         if isinstance(node,ast.BinOp):
             a,b=visit(node.left),visit(node.right)
             if isinstance(node.op,ast.Pow):
                 if b.denominator!=1 or abs(b)>32 or abs(a)>2**32:raise Unclear('Use a small integer exponent.')
+                if max(a.numerator.bit_length(),a.denominator.bit_length())*abs(int(b))>256:
+                    raise Unclear('This power is too large to check. Simplify it first.')
                 value=a**int(b)
             else:
                 op={ast.Add:operator.add,ast.Sub:operator.sub,ast.Mult:operator.mul,ast.Div:operator.truediv}.get(type(node.op))
                 if op is None:raise Unclear('Use +, -, *, /, or a small power.')
                 value=op(a,b)
             if abs(value)>2**64:raise Unclear('This calculation is outside the exercise range.')
-            return value
+            return bounded(value)
         raise Unclear('Use numbers and arithmetic operators, without names or function calls.')
     try:return visit(tree)
     except (ZeroDivisionError,OverflowError,RecursionError):raise Unclear('I cannot interpret that calculation safely. Check the operations.') from None
@@ -57,8 +63,11 @@ def check(exercise, answer, work=''):
                 raise Unclear('Give one unambiguous choice in Final answer, and put your explanation in Show your work.')
         else:
             unit_match=re.search(r'\s*([a-zA-Z]+)\s*$',text)
-            # Hexadecimal digits belong to the number, not a trailing unit.
-            if re.fullmatch(r'(?:0[xX]|x)[0-9a-fA-F]+',text):unit_match=None
+            # Parse the whole expression first so a final hex digit is never a unit.
+            try:
+                parse_number(text)
+                unit_match=None
+            except Unclear:pass
             unit=unit_match.group(1) if unit_match else None
             expr=text[:unit_match.start()] if unit_match else text
             if spec.get('bits') and re.fullmatch('[01]{'+str(spec['bits'])+'}',expr):expr='0b'+expr

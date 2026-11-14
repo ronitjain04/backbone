@@ -23,14 +23,15 @@ def check_program(spec, text):
         if arg.startswith('#') and not -16<=int(arg[1:])<=15:return verdict('needs_clarification','ADD/AND immediates must fit signed imm5 (-16 to 15).')
         instructions.append((op,int(dest[1]),int(source[1]),arg))
     try:
-        from z3 import BitVec, BitVecVal, Solver, sat, unsat
-        initial=[BitVec(f'initial_R{i}',16) for i in range(8)];regs=list(initial)
+        from z3 import BitVec, BitVecVal, Solver, Context, sat, unsat
+        context=Context()
+        initial=[BitVec(f'initial_R{i}',16,ctx=context) for i in range(8)];regs=list(initial)
         for op,dest,source,arg in instructions:
             if op=='NOT':
                 regs[dest]=~regs[source];continue
-            right=regs[int(arg[1])] if arg.startswith('R') else BitVecVal(int(arg[1:]),16)
+            right=regs[int(arg[1])] if arg.startswith('R') else BitVecVal(int(arg[1:]),16,ctx=context)
             regs[dest]=regs[source]+right if op=='ADD' else regs[source]&right
-        solver=Solver();solver.set(timeout=1000);solver.add(regs[spec['register']]!=BitVecVal(spec['value'],16));result=solver.check()
+        solver=Solver(ctx=context);solver.set(timeout=1000);solver.add(regs[spec['register']]!=BitVecVal(spec['value'],16,ctx=context));result=solver.check()
         if result==unsat:return verdict('correct','This snippet produces the requested value for every initial register state.')
         if result==sat:
             model=solver.model();counterexample={f'R{i}':model.eval(r,model_completion=True).as_long() for i,r in enumerate(initial)}

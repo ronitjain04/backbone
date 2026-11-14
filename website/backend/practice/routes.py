@@ -3,12 +3,14 @@ import asyncio
 import hmac
 import logging
 import os
-from functools import partial
 from uuid import UUID
 import psycopg
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, Field
-from .store import Store, Unauthorized, Conflict
+from .store import Store, Unauthorized, Conflict, RateLimited
+from .checking import check as deterministic_check, verdict
+from .assessment import assess, first_arithmetic_error
+from .hints import make_hint, grounded_chunks
 
 COOKIE='backbone_student'
 logger=logging.getLogger(__name__)
@@ -31,6 +33,7 @@ def create_router(store=None, resources=lambda:{}):
         if store is None:raise HTTPException(503,'Practice needs a PostgreSQL connection. Your existing study chat is still available.')
         try:return await asyncio.to_thread(getattr(store,method),*args)
         except Unauthorized as exc:raise HTTPException(401,str(exc)) from None
+        except RateLimited as exc:raise HTTPException(429,str(exc),headers={'Retry-After':'60'}) from None
         except Conflict as exc:raise HTTPException(409,str(exc)) from None
         except KeyError:raise HTTPException(404,'Exercise not found.') from None
         except psycopg.Error:
@@ -57,6 +60,10 @@ def create_router(store=None, resources=lambda:{}):
     @router.get('/state')
     async def state(request:Request):return await db('snapshot',token(request))
 
+    @router.post('/select')
+    async def select(body:Draft,request:Request):
+        return await db('select_exercise',token(request),body.exercise_id)
+
     @router.post('/draft')
     async def draft(body:Draft,request:Request):
         return await db('save_draft',token(request),body.exercise_id,body.answer,body.work,body.revision)
@@ -70,7 +77,39 @@ def create_router(store=None, resources=lambda:{}):
         if not reserved['new']:
             if reserved['result'] is not None:return reserved['result']
             raise HTTPException(409,'This request is still processing. Your work is saved; retry shortly.')
-        result={'status':'unavailable','message':'The tutor is not configured yet. Your attempted work is saved.','misconception':None,'sources':[]}
+        attempts=await db('attempts',student,body.exercise_id)
+        current=resources()
+        retriever=current.get('retrievers',{}).get('cs2110')
+        try:
+            if kind=='hint':
+                result=await asyncio.to_thread(make_hint,exercise,reserved['hint_level'],attempts,retriever)
+            else:
+                result=await asyncio.to_thread(deterministic_check,exercise,body.answer,body.work)
+                chunks=await asyncio.to_thread(grounded_chunks,exercise,retriever,body.work[:1500])
+                arithmetic=first_arithmetic_error(body.work,width=16 if exercise['topic']=='lc3' else exercise['checker'].get('bits') or exercise['checker'].get('arithmetic_width'))
+                if arithmetic:
+                    result=verdict('incorrect','The first arithmetic equality we can verify as incorrect is quoted below. Recalculate that step before continuing.',
+                                   misconception=arithmetic,reasoning_status='incorrect',value_status=result['status'],sources=chunks)
+                elif result.get('requires_rubric') or (exercise['checker'].get('requires_reasoning') and not body.work.strip()) or (body.work.strip() and result['status']!='needs_clarification'):
+                    reasoning=await assess(exercise,body.answer,body.work,chunks,current.get('model'),attempts)
+                    if exercise['checker']['kind']=='explanation':result=reasoning
+                    else:
+                        value_status=result['status']
+                        if value_status=='incorrect':
+                            reasoning['status']='incorrect'
+                            reasoning['message']='The final result still needs revision. '+reasoning['message']
+                        elif reasoning['status']=='unavailable':
+                            reasoning['status']='needs_clarification'
+                            reasoning['message']='The final value checks out, but I could not assess the reasoning right now. Your work is saved.'
+                        result=dict(reasoning,value_status=value_status,reasoning_status=reasoning.get('status'))
+                elif not body.work.strip():
+                    result['reasoning_status']='not_assessed'
+                    if result['status']=='incorrect':result['clarification']='Could you show one intermediate step so we can identify a supported error?'
+                result.setdefault('sources',[])
+                if not result['sources']:result['sources']=chunks
+        except Exception:
+            logger.warning('Practice action could not be assessed')
+            result=verdict('unavailable','The tutor is temporarily unavailable. Your attempted work is saved; retry later.')
         return await db('finish_action',student,reserved['id'],result)
 
     @router.post('/check')

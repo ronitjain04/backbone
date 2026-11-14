@@ -37,3 +37,18 @@ def test_choice_prose_does_not_get_silently_interpreted():
     assert check(load_bank()['num-05'],'yes','')['status']=='correct'
     assert check(load_bank()['num-05'],'no','')['status']=='incorrect'
     assert check(load_bank()['num-05'],'yes but no overflow actually','')['status']=='needs_clarification'
+
+def test_every_authored_deterministic_answer_and_follow_up_checks():
+    for exercise in load_bank().values():
+        for e in (exercise,exercise['follow_up']):
+            if e['checker']['kind']=='explanation':continue
+            assert check(e,e['answer'],'')['status']=='correct',e['id']
+
+def test_fraction_growth_is_bounded_before_exponentiation():
+    e=load_bank()['num-01']
+    assert check(e,'((((1/2)^32)^32)^32)^32','')['status']=='needs_clarification'
+    assert parse_number('1/8')==0.125
+
+@pytest.mark.parametrize('answer',['0x20 + 0xD','x20 + xD','0xD+0x20'])
+def test_hexadecimal_calculations_do_not_get_mistaken_for_units(answer):
+    assert check(load_bank()['num-01'],answer,'')['status']=='correct'

@@ -1,6 +1,7 @@
 import {renderAnswer} from './answer-renderer.mjs';
 const $=id=>document.getElementById(id);
 let state=null,selected=null,timer=null,saving=Promise.resolve(),busy=false,events=[],ownerKey='';
+const pendingActions=new Map();
 const topics={numbers:'Number representation',memory:'Memory & addressing',lc3:'LC-3 execution'};
 const node=(tag,text,className)=>{const el=document.createElement(tag);el.textContent=text;if(className)el.className=className;return el};
 async function api(path,data,headers={}){
@@ -19,7 +20,7 @@ function list(){
   const group=node('div','', 'practice-topic');group.append(node('h3',title));
   state.exercises.filter(e=>e.topic===topic&&!e.id.endsWith('-follow')).forEach(e=>{
    const completed=state.progress[e.id]?.completed;const b=node('button',`${completed?'✓ ':''}${e.title}`);
-   b.type='button';b.dataset.exercise=e.id;b.setAttribute('aria-current',String(e.id===selected));b.addEventListener('click',async()=>{if(busy)return;setBusy(true);try{await flush();select(e.id)}catch(err){error(err)}finally{setBusy(false)}});group.append(b);
+   b.type='button';b.dataset.exercise=e.id;b.setAttribute('aria-current',String(e.id===selected));b.addEventListener('click',async()=>{if(busy)return;setBusy(true);try{await flush();await api('select',{exercise_id:e.id});select(e.id)}catch(err){error(err)}finally{setBusy(false)}});group.append(b);
   });target.append(group);
  }
  const completed=state.exercises.filter(e=>!e.id.endsWith('-follow')&&state.progress[e.id]?.completed).length;
@@ -50,7 +51,7 @@ function select(id){
  $('practice-follow').hidden=!p.completed||id.endsWith('-follow');list();
  if(draft!==p)timer=setTimeout(()=>flush().catch(error),600);
 }
-function show(s){state=s;$('practice-entry').hidden=true;$('practice-workspace').hidden=false;$('practice-replay').hidden=false;select(selected&&s.exercises.some(e=>e.id===selected)?selected:'num-01')}
+function show(s){state=s;$('practice-entry').hidden=true;$('practice-workspace').hidden=false;$('practice-replay').hidden=false;select(selected&&s.exercises.some(e=>e.id===selected)?selected:(s.selected_exercise??'num-01'))}
 async function saveCurrent(){
  if(!state||!selected)return;
  const id=selected,p=progress(),answer=$('practice-answer').value,work=$('practice-work').value,key=localKey();
@@ -71,18 +72,25 @@ async function action(kind){
  if(busy)return;setBusy(true);clearError();
  try{
   await flush();const p=progress();
-  const result=await api(kind,{exercise_id:selected,answer:p.answer,work:p.work,revision:p.revision,request_key:crypto.randomUUID()});
+  const pendingKey=`backbone-practice-action:${state.session_id}:${selected}:${kind}`;
+  let request=pendingActions.get(pendingKey);
+  if(!request){try{request=JSON.parse(localStorage.getItem(pendingKey))}catch{}}
+  if(!request){request={exercise_id:selected,answer:p.answer,work:p.work,revision:p.revision,request_key:crypto.randomUUID()};pendingActions.set(pendingKey,request);try{localStorage.setItem(pendingKey,JSON.stringify(request))}catch{}}
+  const recovered=request.answer!==p.answer||request.work!==p.work;
+  const result=await api(kind,request);
+  pendingActions.delete(pendingKey);try{localStorage.removeItem(pendingKey)}catch{}
   feedback(result);state.actions.push({exercise_id:selected,kind,result});
+  if(recovered)$('practice-feedback').append(node('p','Recovered feedback for your earlier attempt. Your current draft is still here; check it when you are ready.','practice-note'));
   if(result.status==='correct')p.completed=true;if(result.status==='hint')p.hint_level=result.level;
   $('practice-follow').hidden=!p.completed||selected.endsWith('-follow');list();
  }catch(err){error(err)}finally{setBusy(false)}
 }
 $('practice-form').addEventListener('submit',e=>{e.preventDefault();action('check')});$('practice-hint').addEventListener('click',()=>action('hint'));
 $('practice-retry-save').addEventListener('click',()=>{clearError();flush().catch(error)});
-$('practice-follow').addEventListener('click',async()=>{try{await flush();select(selected+'-follow')}catch(err){error(err)}});
+$('practice-follow').addEventListener('click',async()=>{try{await flush();const id=selected+'-follow';await api('select',{exercise_id:id});select(id)}catch(err){error(err)}});
 $('practice-delete').addEventListener('click',async()=>{
  if(!confirm('Delete your saved demo work, hints, and replay history?'))return;
- try{await saving.catch(()=>{});clearTimeout(timer);await api('delete',{});const prefix=`backbone-practice:${state.session_id}:`;try{Object.keys(localStorage).filter(k=>k.startsWith(prefix)).forEach(k=>localStorage.removeItem(k))}catch{}state=null;selected=null;$('practice-workspace').hidden=true;$('practice-replay').hidden=true;$('practice-replay-panel').hidden=true;$('practice-entry').hidden=false}catch(err){error(err)}
+ try{await saving.catch(()=>{});clearTimeout(timer);await api('delete',{});const prefix=`backbone-practice:${state.session_id}:`,pendingPrefix=`backbone-practice-action:${state.session_id}:`;try{Object.keys(localStorage).filter(k=>k.startsWith(prefix)||k.startsWith(pendingPrefix)).forEach(k=>localStorage.removeItem(k))}catch{}state=null;selected=null;$('practice-workspace').hidden=true;$('practice-replay').hidden=true;$('practice-replay-panel').hidden=true;$('practice-entry').hidden=false}catch(err){error(err)}
 });
 function replay(){
  const i=Number($('replay-step').value),event=events[i];if(!event)return;

@@ -49,3 +49,17 @@ test('replay renders submitted work literally',async()=>{
   assert.equal(h.doc.querySelector('#replay-event script'),null);
  }finally{h.dom.window.close()}
 });
+
+test('retrying a lost hint response reuses its request ID',async()=>{
+ const h=await harness();const keys=[];let first=true;
+ const original=h.dom.window.fetch;
+ h.dom.window.fetch=async(path,opts)=>{
+  if(path.endsWith('/hint')){keys.push(JSON.parse(opts.body).request_key);if(first){first=false;throw Error('Response lost')}return {ok:true,json:async()=>({status:'hint',level:1,message:'Which bits are set?',sources:[]})}}
+  return original(path,opts);
+ };
+ try{
+  h.doc.querySelector('#practice-hint').click();await tick();await tick();
+  h.doc.querySelector('#practice-hint').click();await tick();await tick();
+  assert.equal(keys.length,2);assert.equal(keys[0],keys[1]);
+ }finally{h.dom.window.close()}
+});

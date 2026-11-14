@@ -1,7 +1,7 @@
 [
   {
     "id": "num-01",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "numbers",
     "title": "Read the bits",
@@ -29,8 +29,8 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 2.7 Other Representations; printed p. 46; PDF p. 75",
-        "fingerprint": "5bb4547dd7fc623a8aef3f7705bbe166a346b00c4e9956799e50fda9fc6bf527"
+        "details": "Section 2.2 Integer Data Types; printed p. 27; PDF p. 56",
+        "fingerprint": "230c68dcf878c1065801cd65d69febc1ff3de2ec0f739351fac1dfdc727bf4fd"
       },
       {
         "source": "CS 2110 — Lab 02 Slides",
@@ -62,8 +62,8 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 2.7 Other Representations; printed p. 46; PDF p. 75",
-          "fingerprint": "5bb4547dd7fc623a8aef3f7705bbe166a346b00c4e9956799e50fda9fc6bf527"
+          "details": "Section 2.2 Integer Data Types; printed p. 27; PDF p. 56",
+          "fingerprint": "230c68dcf878c1065801cd65d69febc1ff3de2ec0f739351fac1dfdc727bf4fd"
         },
         {
           "source": "CS 2110 — Lab 02 Slides",
@@ -72,9 +72,9 @@
         }
       ],
       "hints": [
-        "Which positions contain a 1?",
-        "Each position has weight 2 raised to its position, starting at zero on the right.",
-        "Write the value as 2^5 + 2^3 + 2^2 + 2^0, then evaluate."
+        "Which bits are set in the new pattern?",
+        "Use the position weights, with the rightmost bit at position zero.",
+        "Evaluate 2^5 + 2^4 + 2^1."
       ],
       "mistakes": [
         {
@@ -85,13 +85,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "numbers",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "num-02",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "numbers",
     "title": "A signed interpretation",
@@ -177,13 +177,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "numbers",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "num-03",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "numbers",
     "title": "Encode a negative number",
@@ -256,9 +256,9 @@
         }
       ],
       "hints": [
-        "Start by representing the positive magnitude.",
-        "Negation uses both inversion and an addition.",
-        "Write +13 in eight bits, invert every bit, then add one within eight bits."
+        "What is +6 in eight bits?",
+        "Negation requires inversion and then adding one.",
+        "Invert the eight-bit representation of +6 and add one within eight bits."
       ],
       "mistakes": [
         {
@@ -269,13 +269,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "numbers",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "num-04",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "numbers",
     "title": "Find the lower bound",
@@ -304,8 +304,8 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 2.3 2’s Complement Integers; printed p. 30; PDF p. 59",
-        "fingerprint": "4c2a0de52398d3a06c876d2b1a92ad3c7f7a092cf851d81697c12d1131649919"
+        "details": "Section 2.3 2’s Complement Integers; printed p. 31; PDF p. 60",
+        "fingerprint": "0152bca5772782ec2d52a45e365f27656ca69d722c0adc0a726ce1d3c22800bf"
       },
       {
         "source": "CS 2110 — Lab 01 Slides",
@@ -337,8 +337,8 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 2.3 2’s Complement Integers; printed p. 30; PDF p. 59",
-          "fingerprint": "4c2a0de52398d3a06c876d2b1a92ad3c7f7a092cf851d81697c12d1131649919"
+          "details": "Section 2.3 2’s Complement Integers; printed p. 31; PDF p. 60",
+          "fingerprint": "0152bca5772782ec2d52a45e365f27656ca69d722c0adc0a726ce1d3c22800bf"
         },
         {
           "source": "CS 2110 — Lab 01 Slides",
@@ -347,9 +347,9 @@
         }
       ],
       "hints": [
-        "How many bits remain after accounting for the sign position?",
-        "Two’s complement includes one more negative value than positive values.",
-        "Use -2^(n-1) with n = 6."
+        "What is different about the largest positive value?",
+        "The top bit is zero in a nonnegative signed value.",
+        "Use 2^(n-1) - 1 with n = 6."
       ],
       "mistakes": [
         {
@@ -360,13 +360,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "numbers",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "num-05",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "numbers",
     "title": "Spot signed overflow",
@@ -381,7 +381,9 @@
         "yes",
         "overflow",
         "true"
-      ]
+      ],
+      "requires_reasoning": true,
+      "arithmetic_width": 8
     },
     "rubric": [
       {
@@ -458,13 +460,13 @@
       "input_help": "Enter yes or no; put your explanation in Show your work.",
       "topic": "numbers",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "num-06",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "numbers",
     "title": "A bit mask",
@@ -535,9 +537,9 @@
         }
       ],
       "hints": [
-        "Which positions are permitted by the second operand?",
-        "AND keeps a bit only when both inputs have a 1 there.",
-        "The upper four positions become zero; apply AND to the lower four."
+        "Which positions does the high-nibble mask keep?",
+        "Apply AND separately to corresponding bits.",
+        "Zero the low four positions and keep the high four input positions."
       ],
       "mistakes": [
         {
@@ -548,13 +550,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "numbers",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "mem-01",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "memory",
     "title": "Count the locations",
@@ -583,8 +585,8 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 3.5 The Concept of Memory; printed p. 75; PDF p. 104",
-        "fingerprint": "1dea6b9a59f6f4f49cbd6aaf26b10f4a21bd4a1f7f82aff4b4bba23ae1113904"
+        "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+        "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
       },
       {
         "source": "CS 2110 — Lab 06 Slides - Copy",
@@ -617,8 +619,8 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 3.5 The Concept of Memory; printed p. 75; PDF p. 104",
-          "fingerprint": "1dea6b9a59f6f4f49cbd6aaf26b10f4a21bd4a1f7f82aff4b4bba23ae1113904"
+          "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+          "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
         },
         {
           "source": "CS 2110 — Lab 06 Slides - Copy",
@@ -627,9 +629,9 @@
         }
       ],
       "hints": [
-        "What does one distinct address identify?",
-        "Count all combinations of twelve binary digits.",
-        "Write 2^12 and evaluate it."
+        "How many combinations can ten binary digits represent?",
+        "One distinct address identifies one location.",
+        "Evaluate 2^10 locations."
       ],
       "mistakes": [
         {
@@ -640,13 +642,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "memory",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "mem-02",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "memory",
     "title": "Bits at one address",
@@ -732,13 +734,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "memory",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "mem-03",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "memory",
     "title": "Total capacity",
@@ -767,8 +769,8 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 3.5 The Concept of Memory; printed p. 75; PDF p. 104",
-        "fingerprint": "1dea6b9a59f6f4f49cbd6aaf26b10f4a21bd4a1f7f82aff4b4bba23ae1113904"
+        "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+        "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
       },
       {
         "source": "CS 2110 — Lab 06 Slides - Copy",
@@ -801,8 +803,8 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 3.5 The Concept of Memory; printed p. 75; PDF p. 104",
-          "fingerprint": "1dea6b9a59f6f4f49cbd6aaf26b10f4a21bd4a1f7f82aff4b4bba23ae1113904"
+          "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+          "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
         },
         {
           "source": "CS 2110 — Lab 06 Slides - Copy",
@@ -811,9 +813,9 @@
         }
       ],
       "hints": [
-        "Which two quantities determine total storage?",
-        "Multiply the number of addresses by the bits stored at each address.",
-        "Set up 2^10 × 16 / 8 bytes, then evaluate."
+        "How many locations do eight address bits identify?",
+        "Multiply location count by bits per location, then convert to bytes.",
+        "Set up 2^8 × 32 / 8 bytes."
       ],
       "mistakes": [
         {
@@ -824,13 +826,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "memory",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "mem-04",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "memory",
     "title": "Bytes and kibibytes",
@@ -859,8 +861,8 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 3.5 The Concept of Memory; printed p. 75; PDF p. 104",
-        "fingerprint": "1dea6b9a59f6f4f49cbd6aaf26b10f4a21bd4a1f7f82aff4b4bba23ae1113904"
+        "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+        "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
       },
       {
         "source": "CS 2110 — Lab 06 Slides - Copy",
@@ -893,8 +895,8 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 3.5 The Concept of Memory; printed p. 75; PDF p. 104",
-          "fingerprint": "1dea6b9a59f6f4f49cbd6aaf26b10f4a21bd4a1f7f82aff4b4bba23ae1113904"
+          "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+          "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
         },
         {
           "source": "CS 2110 — Lab 06 Slides - Copy",
@@ -903,9 +905,9 @@
         }
       ],
       "hints": [
-        "How many bytes are stored at each address?",
-        "For byte-addressable memory, the location count is also the byte count.",
-        "Convert 2^15 bytes to KiB by dividing by 2^10."
+        "How many bytes do sixteen address bits identify here?",
+        "Byte-addressable means one byte at each address.",
+        "Convert 2^16 bytes to KiB by dividing by 2^10."
       ],
       "mistakes": [
         {
@@ -916,13 +918,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "memory",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "mem-05",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "memory",
     "title": "LC-3 addressable capacity",
@@ -995,9 +997,9 @@
         }
       ],
       "hints": [
-        "Does an LC-3 address identify a byte or a word?",
-        "Each word contains sixteen bits, or two bytes.",
-        "Multiply the number of sixteen-bit addresses by two bytes per word."
+        "How many bytes are in one LC-3 word?",
+        "An LC-3 word is sixteen bits.",
+        "Multiply 256 words by the byte count of one word."
       ],
       "mistakes": [
         {
@@ -1008,13 +1010,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "memory",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "mem-06",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "memory",
     "title": "Same width, different storage",
@@ -1041,8 +1043,8 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 3.5 The Concept of Memory; printed p. 75; PDF p. 104",
-        "fingerprint": "1dea6b9a59f6f4f49cbd6aaf26b10f4a21bd4a1f7f82aff4b4bba23ae1113904"
+        "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+        "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
       },
       {
         "source": "CS 2110 — Lab 06 Slides - Copy",
@@ -1073,8 +1075,8 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 3.5 The Concept of Memory; printed p. 75; PDF p. 104",
-          "fingerprint": "1dea6b9a59f6f4f49cbd6aaf26b10f4a21bd4a1f7f82aff4b4bba23ae1113904"
+          "details": "Section 3.5 The Concept of Memory; printed p. 76; PDF p. 105",
+          "fingerprint": "7258fa27ddf360bc306d83d8457403bf8280922cc1ebfd8addcf74c23549d809"
         },
         {
           "source": "CS 2110 — Lab 06 Slides - Copy",
@@ -1096,13 +1098,13 @@
       "input_help": "Write a short explanation in Final answer; Show your work is optional.",
       "topic": "memory",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "lc3-01",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "lc3",
     "title": "Trace ADD",
@@ -1131,8 +1133,8 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 5.3 Data Movement Instructions; printed p. 161; PDF p. 190",
-        "fingerprint": "db0a3fb935fdcd5fedeadaba55ec6b03d628d0e12734241fc2b859d477b68464"
+        "details": "Section 5.2 Operate Instructions; printed p. 152; PDF p. 181",
+        "fingerprint": "c17541f4df39b1c0951575cd5668e2ed55cf98016ebefa129566f407a7085dc6"
       },
       {
         "source": "CS 2110 — Lab 09 Slides",
@@ -1165,8 +1167,8 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 5.3 Data Movement Instructions; printed p. 161; PDF p. 190",
-          "fingerprint": "db0a3fb935fdcd5fedeadaba55ec6b03d628d0e12734241fc2b859d477b68464"
+          "details": "Section 5.2 Operate Instructions; printed p. 152; PDF p. 181",
+          "fingerprint": "c17541f4df39b1c0951575cd5668e2ed55cf98016ebefa129566f407a7085dc6"
         },
         {
           "source": "CS 2110 — Lab 09 Slides",
@@ -1175,9 +1177,9 @@
         }
       ],
       "hints": [
-        "Which register is the source, and which is the destination?",
-        "The immediate operand is a signed value.",
-        "Substitute the source value into R0 = R1 + (-3)."
+        "What value is currently in the source register?",
+        "ADD includes the signed immediate in its sum.",
+        "Evaluate R0 = -2 + 5."
       ],
       "mistakes": [
         {
@@ -1188,13 +1190,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "lc3",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "lc3-02",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "lc3",
     "title": "Trace NOT",
@@ -1280,13 +1282,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "lc3",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "lc3-03",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "lc3",
     "title": "Condition codes",
@@ -1317,8 +1319,8 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 5.4 Control Instructions; printed p. 163; PDF p. 192",
-        "fingerprint": "170cffb38c9fc0005bc242248c32537c9d40e39b3287eedfede87d49854901e5"
+        "details": "Section 5.1 The ISA: Overview; printed p. 151; PDF p. 180",
+        "fingerprint": "a6494824d21ba1f468ecdccb39b967ac6a63029d71127c9afbeee373413b7789"
       },
       {
         "source": "CS 2110 — Lab 10 Slides",
@@ -1353,8 +1355,8 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 5.4 Control Instructions; printed p. 163; PDF p. 192",
-          "fingerprint": "170cffb38c9fc0005bc242248c32537c9d40e39b3287eedfede87d49854901e5"
+          "details": "Section 5.1 The ISA: Overview; printed p. 151; PDF p. 180",
+          "fingerprint": "a6494824d21ba1f468ecdccb39b967ac6a63029d71127c9afbeee373413b7789"
         },
         {
           "source": "CS 2110 — Lab 10 Slides",
@@ -1376,13 +1378,13 @@
       "input_help": "Enter N, Z, or P; explain your trace below.",
       "topic": "lc3",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "lc3-04",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "lc3",
     "title": "PC-relative addressing",
@@ -1455,9 +1457,9 @@
         }
       ],
       "hints": [
-        "Which PC value is used after instruction fetch?",
-        "The PC advances before the PC-relative offset is applied.",
-        "Start from x3001, then apply the signed offset of -3."
+        "Which PC value is used after fetch?",
+        "Start with the incremented PC.",
+        "Add the offset +4 to x3001."
       ],
       "mistakes": [
         {
@@ -1468,13 +1470,13 @@
       "input_help": "Enter a decimal value, a prefixed binary/hex value, or a short calculation. Explain your steps below.",
       "topic": "lc3",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "lc3-05",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "lc3",
     "title": "Write a bounded snippet",
@@ -1504,8 +1506,8 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 5.2 Operate Instructions; printed p. 151; PDF p. 180",
-        "fingerprint": "45756eef4d1a0ef4b353586cba9ade891b46b1386cc6d96382ee5e00c9d0edb9"
+        "details": "Section 5.2 Operate Instructions; printed p. 153; PDF p. 182",
+        "fingerprint": "2a35ca80760e6214a3464530b6294fe04d67faa336bed3e977528dc2e90eab8a"
       },
       {
         "source": "CS 2110 — Lab 09 Slides",
@@ -1539,8 +1541,8 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 5.2 Operate Instructions; printed p. 151; PDF p. 180",
-          "fingerprint": "45756eef4d1a0ef4b353586cba9ade891b46b1386cc6d96382ee5e00c9d0edb9"
+          "details": "Section 5.2 Operate Instructions; printed p. 153; PDF p. 182",
+          "fingerprint": "2a35ca80760e6214a3464530b6294fe04d67faa336bed3e977528dc2e90eab8a"
         },
         {
           "source": "CS 2110 — Lab 09 Slides",
@@ -1562,13 +1564,13 @@
       "input_help": "Enter an LC-3 snippet in Final answer. Use Show your work to explain why it works.",
       "topic": "lc3",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   },
   {
     "id": "lc3-06",
-    "version": "2026-11-14.1",
+    "version": "2026-11-14.3",
     "course": "cs2110",
     "topic": "lc3",
     "title": "LD versus LEA",
@@ -1595,13 +1597,18 @@
     "references": [
       {
         "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-        "details": "Section 5.4 Control Instructions; printed p. 167; PDF p. 196",
-        "fingerprint": "1a205cbb1f462d299ce3577ac17cb8846530da24fee2b394c1a834d43cbf1fe7"
+        "details": "Section 5.2 Operate Instructions; printed p. 154; PDF p. 183",
+        "fingerprint": "74767c813bae297f12a6fec14d3a44091fc3447f854d90452352f126802e3062"
       },
       {
         "source": "CS 2110 — Lab 10 Slides",
-        "details": "Slide 20",
-        "fingerprint": "65da82d59098e8570d4d5014f05ec5c9c12eda98e41d1ad6cb916cc8897a8e0e"
+        "details": "Slide 44",
+        "fingerprint": "9bf206e6ba9a81248aac7d8680585cd68f83963dc161de2a232fd54c28982dde"
+      },
+      {
+        "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+        "details": "Section 5.3 Data Movement Instructions; printed p. 156; PDF p. 185",
+        "fingerprint": "238f93d69d6ed21d105cf6191b997ef7d729f27721a7765060b4613aec94e405"
       }
     ],
     "hints": [
@@ -1627,13 +1634,18 @@
       "references": [
         {
           "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
-          "details": "Section 5.4 Control Instructions; printed p. 167; PDF p. 196",
-          "fingerprint": "1a205cbb1f462d299ce3577ac17cb8846530da24fee2b394c1a834d43cbf1fe7"
+          "details": "Section 5.2 Operate Instructions; printed p. 154; PDF p. 183",
+          "fingerprint": "74767c813bae297f12a6fec14d3a44091fc3447f854d90452352f126802e3062"
         },
         {
           "source": "CS 2110 — Lab 10 Slides",
-          "details": "Slide 20",
-          "fingerprint": "65da82d59098e8570d4d5014f05ec5c9c12eda98e41d1ad6cb916cc8897a8e0e"
+          "details": "Slide 44",
+          "fingerprint": "9bf206e6ba9a81248aac7d8680585cd68f83963dc161de2a232fd54c28982dde"
+        },
+        {
+          "source": "CS 2110 — Patt & Patel, Introduction to Computing Systems, 3rd ed.",
+          "details": "Section 5.3 Data Movement Instructions; printed p. 156; PDF p. 185",
+          "fingerprint": "238f93d69d6ed21d105cf6191b997ef7d729f27721a7765060b4613aec94e405"
         }
       ],
       "hints": [
@@ -1650,7 +1662,7 @@
       "input_help": "Write a short explanation in Final answer; Show your work is optional.",
       "topic": "lc3",
       "course": "cs2110",
-      "version": "2026-11-14.1",
+      "version": "2026-11-14.3",
       "difficulty": "extend"
     }
   }

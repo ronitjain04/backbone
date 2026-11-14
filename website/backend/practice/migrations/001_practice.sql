@@ -43,3 +43,10 @@ CREATE TABLE IF NOT EXISTS practice_events (
  payload jsonb NOT NULL, PRIMARY KEY(session_id,seq)
 );
 CREATE INDEX IF NOT EXISTS practice_submissions_history ON practice_submissions(session_id,exercise_id,created_at);
+
+ALTER TABLE practice_sessions ADD COLUMN IF NOT EXISTS selected_exercise text NOT NULL DEFAULT 'num-01';
+
+CREATE TABLE IF NOT EXISTS practice_budgets (
+ kind text NOT NULL, bucket timestamptz NOT NULL, used integer NOT NULL,
+ PRIMARY KEY(kind,bucket)
+);

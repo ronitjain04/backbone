@@ -1,16 +1,19 @@
 """PostgreSQL persistence; every mutation owns the session lock and its events."""
 import hashlib
 import secrets
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from uuid import uuid4, UUID
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.conninfo import conninfo_to_dict
 from psycopg.types.json import Jsonb
 from .bank import BANK_VERSION, public_exercise
 
 CLASSROOM = UUID('681f864f-13a5-439b-a1db-5cac9b9ecb73')
 class Unauthorized(Exception): pass
 class Conflict(Exception): pass
+class RateLimited(Exception): pass
 
 
 class Store:
@@ -18,7 +21,8 @@ class Store:
         self.dsn = dsn
 
     def connect(self):
-        return psycopg.connect(self.dsn, row_factory=dict_row, connect_timeout=5, options='-c statement_timeout=10000')
+        options=conninfo_to_dict(self.dsn).get('options','')+' -c statement_timeout=10000'
+        return psycopg.connect(self.dsn, row_factory=dict_row, connect_timeout=5, options=options,prepare_threshold=None)
 
     def migrate(self):
         with self.connect() as db:
@@ -44,9 +48,15 @@ class Store:
         db.execute('INSERT INTO practice_events(session_id,seq,kind,exercise_id,payload) VALUES (%s,%s,%s,%s,%s)',
                    (session['id'],seq,kind,exercise_id,Jsonb(payload or {})))
 
+    def budget(self,db,kind,period,limit):
+        count=db.execute('INSERT INTO practice_budgets(kind,bucket,used) VALUES (%s,date_trunc(%s,clock_timestamp()),1) ON CONFLICT(kind,bucket) DO UPDATE SET used=practice_budgets.used+1 RETURNING used',(kind,period)).fetchone()['used']
+        if count>limit:raise RateLimited('The demo is busy. Please try again in a minute.')
+        db.execute("DELETE FROM practice_budgets WHERE bucket<now()-interval '2 days'")
+
     def create_student(self, name='Student'):
         student, session, token = uuid4(), uuid4(), secrets.token_urlsafe(32)
         with self.connect() as db:
+            self.budget(db,'start','hour',1000)
             db.execute('INSERT INTO practice_students(id,display_name) VALUES (%s,%s)', (student,name[:60] or 'Student'))
             db.execute('INSERT INTO practice_memberships VALUES (%s,%s)', (student,CLASSROOM))
             db.execute('INSERT INTO practice_sessions(id,student_id,classroom_id,token_digest,bank_version) VALUES (%s,%s,%s,%s,%s)',
@@ -67,7 +77,7 @@ class Store:
             exercises=db.execute('SELECT definition FROM practice_exercises WHERE version=%s ORDER BY id',(s['bank_version'],)).fetchall()
             progress=db.execute('SELECT exercise_id,answer,work,revision,completed,hint_level FROM practice_progress WHERE session_id=%s',(s['id'],)).fetchall()
             actions=db.execute('SELECT id,exercise_id,kind,result,created_at FROM practice_submissions WHERE session_id=%s ORDER BY created_at,id',(s['id'],)).fetchall()
-            return {'session_id':str(s['id']),'classroom':'CS 2110 · Guided practice','exercises':[public_exercise(r['definition']) for r in exercises],
+            return {'session_id':str(s['id']),'selected_exercise':s['selected_exercise'],'classroom':'CS 2110 · Guided practice','exercises':[public_exercise(r['definition']) for r in exercises],
                     'progress':{r['exercise_id']:{k:v for k,v in r.items() if k!='exercise_id'} for r in progress},
                     'actions':[dict(r,id=str(r['id']),created_at=r['created_at'].isoformat()) for r in actions]}
 
@@ -75,12 +85,20 @@ class Store:
         if not db.execute('SELECT 1 FROM practice_exercises WHERE version=%s AND id=%s',(s['bank_version'],exercise_id)).fetchone(): raise KeyError('Exercise not found')
         db.execute('INSERT INTO practice_progress(session_id,exercise_id) VALUES (%s,%s) ON CONFLICT DO NOTHING',(s['id'],exercise_id))
 
+    def select_exercise(self, token, exercise_id):
+        with self.connect() as db:
+            s=self.session(db,token,True);self.ensure_progress(db,s,exercise_id)
+            db.execute('UPDATE practice_sessions SET selected_exercise=%s WHERE id=%s',(exercise_id,s['id']))
+            self.event(db,s,'exercise_selected',exercise_id)
+        return {'selected_exercise':exercise_id}
+
     def save_draft(self, token, exercise_id, answer, work, revision):
         with self.connect() as db:
             s=self.session(db,token,True); self.ensure_progress(db,s,exercise_id)
             row=db.execute('UPDATE practice_progress SET answer=%s,work=%s,revision=revision+1,updated_at=clock_timestamp() WHERE session_id=%s AND exercise_id=%s AND revision=%s RETURNING revision',
                            (answer,work,s['id'],exercise_id,revision)).fetchone()
             if not row: raise Conflict('A newer draft exists. Reload to see the latest saved work.')
+            db.execute('UPDATE practice_sessions SET selected_exercise=%s WHERE id=%s',(exercise_id,s['id']))
             self.event(db,s,'draft_saved',exercise_id,{'answer':answer,'work':work,'revision':row['revision']})
             return row
 
@@ -91,7 +109,17 @@ class Store:
             if existing:
                 if existing['exercise_id']!=exercise_id or existing['kind']!=kind or existing['input']!=content:
                     raise Conflict('This request ID was already used with different work.')
+                if existing['result'] is None and datetime.now(timezone.utc)-existing['created_at']>timedelta(seconds=90):
+                    failed={'status':'unavailable','message':'The previous request was interrupted. Your work is saved; request another check or hint.','sources':[],'misconception':None}
+                    db.execute('UPDATE practice_submissions SET result=%s WHERE id=%s',(Jsonb(failed),existing['id']))
+                    if kind=='check':db.execute('INSERT INTO practice_feedback VALUES (%s,%s,DEFAULT)',(existing['id'],Jsonb(failed)))
+                    self.event(db,s,kind+'_finished',exercise_id,{'action_id':str(existing['id']),**failed})
+                    existing['result']=failed
                 return {'id':str(existing['id']),'result':existing['result'],'new':False,'hint_level':existing['hint_level']}
+            if db.execute("SELECT count(*) AS n FROM practice_submissions WHERE session_id=%s AND created_at>now()-interval '1 minute'",(s['id'],)).fetchone()['n']>=12:
+                raise RateLimited('You have made several requests. Please wait a minute before another check or hint.')
+            # Non-identifying counters survive student deletion and span serverless instances.
+            self.budget(db,'action','minute',60)
             # Recoverable timeouts do not permanently block new hint requests.
             if kind=='hint' and db.execute("SELECT 1 FROM practice_submissions WHERE session_id=%s AND exercise_id=%s AND kind='hint' AND result IS NULL AND created_at>now()-interval '90 seconds'",(s['id'],exercise_id)).fetchone():
                 raise Conflict('A hint is already being prepared. Please wait a moment.')

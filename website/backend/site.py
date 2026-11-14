@@ -1,5 +1,7 @@
 """Public website gateway. Course data and service credentials stay in-process."""
 import os
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 import httpx
@@ -8,6 +10,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from .app import create_app
 from .practice.routes import create_router
+from .practice.store import Store
+from .practice.bank import load_bank
 
 MAX_REQUEST_BYTES = 128 * 1024
 
@@ -15,10 +19,17 @@ MAX_REQUEST_BYTES = 128 * 1024
 def create_site(backend=None, *, token=None, public_dir=None, practice_store=None):
     backend = backend if backend is not None else create_app()
     token = os.getenv('BACKEND_TOKEN', '') if token is None else token
+    practice_store=practice_store or (Store(os.environ['DATABASE_URL']) if os.getenv('DATABASE_URL') else None)
     public_dir = public_dir or Path(__file__).resolve().parent.parent / 'public'
 
     @asynccontextmanager
     async def lifespan(app):
+        if practice_store is not None and os.getenv('PRACTICE_AUTO_MIGRATE')=='1':
+            try:
+                await asyncio.to_thread(practice_store.migrate)
+                await asyncio.to_thread(practice_store.seed,load_bank())
+            except Exception:
+                logging.getLogger(__name__).warning('Practice initialization unavailable; study chat remains available')
         async with backend.router.lifespan_context(backend):
             yield
 

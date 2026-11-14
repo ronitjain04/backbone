@@ -53,3 +53,9 @@ def test_first_incorrect_arithmetic_equality_is_supported_directly():
     assert finding['evidence']=='40 + 4 = 46'
     assert first_arithmetic_error('45') is None
     assert first_arithmetic_error('2^12 = 4096\n4096 * 2 = 8192') is None
+
+def test_valid_fixed_width_wrap_is_not_an_arithmetic_error():
+    from website.backend.practice.assessment import first_arithmetic_error
+    assert first_arithmetic_error('100 + 40 = -116',width=8) is None
+    assert first_arithmetic_error('65535 + 1 = 0',width=16) is None
+    assert first_arithmetic_error('100 + 40 = -115',width=8) is not None

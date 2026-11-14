@@ -3,7 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 
-BANK_VERSION = '2026-11-14.1'
+BANK_VERSION = '2026-11-14.3'
 PUBLIC_FIELDS = ('id', 'version', 'course', 'topic', 'title', 'difficulty', 'prompt', 'input_help', 'references')
 
 
