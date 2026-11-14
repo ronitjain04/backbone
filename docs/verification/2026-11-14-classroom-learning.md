@@ -9,6 +9,8 @@
 
 Review deployment: https://backbone-m62uzldp3-ronit-jain.vercel.app/practice.html (application commit `133e9fe`). Teacher page is at the same origin, `/teacher.html`. Vercel deployment access and the application teacher credential remain separate. Public production was not promoted by this work.
 
+PR: https://github.com/ronitjain04/backbone/pull/12. GitHub Actions backend/deployment tests and frontend tests/build passed on both push and PR runs. Production deployment is intentionally skipped for this feature branch.
+
 ## Automated checks
 
 Local complete suite: **142 Python backend/deployment tests passed; 48 JavaScript frontend tests passed; static build passed**. Python 3.11, Node 24, real PostgreSQL in an isolated schema. CI uses Python 3.12 and PostgreSQL 17.

@@ -63,4 +63,4 @@
 - [x] Write 30-student integration test with 60 action flow, concurrent duplicates, reconnects and teacher reads; write accuracy fixtures spanning all five requested input categories and leakage.
 - [x] Run new tests, observe failure if invariants missing, implement only required fixes, and run full backend/frontend suites with real isolated PostgreSQL.
 - [x] Run latency report and citation/source validation; document measured sample and limitations. Verify isolated Neon migration, hosted review deployment, desktop/mobile visual/dashboard/replay.
-- [ ] Commit, request fresh whole-branch review, fix material findings with regression tests, push review PR, inspect CI to completion. Public production remains unchanged.
+- [x] Commit, request fresh whole-branch review, fix material findings with regression tests, push review PR, inspect CI to completion. Public production remains unchanged.
