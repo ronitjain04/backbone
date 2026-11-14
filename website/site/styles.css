@@ -45,3 +45,20 @@
 @media(max-width:760px){.practice-heading{display:block}.practice-layout{grid-template-columns:1fr}.practice-sidebar{border-right:0;border-bottom:1px solid #d9dccf}.practice-topic{display:inline-block;vertical-align:top;width:100%}.practice-desk{padding:22px 18px}.practice-heading h1{font-size:46px}.practice-page .nav{gap:18px}.practice-page .nav nav{gap:15px}.practice-page .nav button{font-size:12px}.practice-actions .button{padding:13px 16px}.practice-feedback{padding:18px}.practice-owner input{width:100%;box-sizing:border-box}}
 .practice-page [hidden]{display:none!important}
 .practice-selector{display:none}@media(max-width:760px){.practice-sidebar{padding:18px}.practice-sidebar #exercise-list,.practice-sidebar>.practice-note{display:none}.practice-selector{display:block;width:100%;max-width:100%;padding:13px;border:1px solid #c9d2b9;border-radius:9px;background:#fffef9;color:#3d4932;font:inherit;margin:14px 0}.practice-sidebar #practice-delete{font-size:11px}.practice-heading{margin-bottom:24px}}
+
+/* Keep checking, feedback, and the next step visually distinct. */
+.practice-actions{gap:10px;margin:20px 0 0;align-items:center}
+.practice-actions .button,.practice-next .button{min-height:44px;border-radius:8px;padding:11px 18px;font-size:13px;font-weight:550;line-height:1.4;justify-content:center}
+.practice-actions .primary{border:1px solid transparent}
+.practice-actions .secondary{border:1px solid #ccd4be}
+.practice-actions #practice-retry-save{min-height:44px;margin-left:auto;padding:10px 4px;font-size:12px;color:#67705f}
+.practice-feedback{margin-top:20px;padding:20px 22px;border-radius:12px}
+.practice-feedback-label{margin-bottom:10px;font-size:11px;font-weight:650;letter-spacing:.07em;color:#536847;text-transform:uppercase}
+.practice-feedback .answer-body{font-size:14px;line-height:1.7}
+.practice-feedback .answer-body p{line-height:1.7}
+.practice-feedback>details{margin-top:14px;padding-top:12px;border-top:1px solid #e0e5d6}
+.practice-feedback>details>summary{font-size:12px;line-height:1.6;color:#59674f}
+.practice-next{display:flex;justify-content:flex-end;margin-top:16px}
+.practice-next:has(>button[hidden]){display:none}
+.practice-next .button{background:transparent;border-color:#cdd5c0}
+@media(max-width:480px){.practice-actions{gap:10px}.practice-actions .button{flex:1;padding:11px 12px}.practice-actions #practice-retry-save{flex-basis:100%;margin-left:0;text-align:left;min-height:36px;padding:4px 0}.practice-feedback{padding:18px}.practice-next .button{width:100%}}

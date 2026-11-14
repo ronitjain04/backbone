@@ -31,8 +31,8 @@ function sources(container,refs){
 }
 function feedback(result){
  const target=$('practice-feedback');target.replaceChildren();
- const labels={correct:'A supported step forward',incorrect:'Let’s revisit one step',needs_clarification:'Help me understand your work',unavailable:'Your work is saved',hint:`Hint ${result.level??''} of 3`};
- target.append(node('div',labels[result.status]??'Tutor feedback','section-label'),renderAnswer(result.message??''));
+ const labels={correct:'Correct',incorrect:'Let’s revisit one step',needs_clarification:'Help me understand your work',unavailable:'Your work is saved',hint:`Hint ${result.level??''} of 3`};
+ target.append(node('div',labels[result.status]??'Tutor feedback','practice-feedback-label'),renderAnswer(result.message??''));
  if(result.clarification)target.append(node('p',result.clarification));
  if(result.misconception){target.append(node('h3',result.misconception.label),node('blockquote',result.misconception.evidence));}
  if(result.sources?.length){const d=node('details','');d.append(node('summary','Check the supporting sources'));sources(d,result.sources);target.append(d)}
