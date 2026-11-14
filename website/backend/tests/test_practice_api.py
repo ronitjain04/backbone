@@ -109,3 +109,15 @@ def test_presence_visual_and_teacher_detail_authorization(practice,monkeypatch):
     assert client.get('/api/practice/state').json()['visuals']=={}
     assert client.post('/api/practice/visual',json={**visual,'stage':4},headers=origin).status_code==422
     assert client.post('/api/practice/select',json={'exercise_id':'mem-03-follow'},headers=origin).status_code==409
+
+
+def test_visual_retry_recovers_saved_sources_even_if_retriever_disappears(practice,monkeypatch):
+    from website.backend.practice import routes
+    client,_=practice;origin={'Origin':'http://testserver'}
+    client.post('/api/practice/start',json={},headers=origin)
+    monkeypatch.setattr(routes,'grounded_chunks',lambda *a:[{'source':'Fixture','details':'1','text':'Addressability describes one location.'}])
+    body={'exercise_id':'mem-03','request_key':'visual-retry-0','stage':1,'address_bits':2,'bits_per_location':4}
+    first=client.post('/api/practice/visual',json=body,headers=origin).json();assert first['status']=='visual'
+    monkeypatch.setattr(routes,'grounded_chunks',lambda *a:[])
+    assert client.post('/api/practice/visual',json=body,headers=origin).json()==first
+    assert client.post('/api/practice/visual',json={**body,'stage':2},headers=origin).status_code==409

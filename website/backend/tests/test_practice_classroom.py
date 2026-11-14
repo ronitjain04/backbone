@@ -53,3 +53,10 @@ def test_classroom_evidence_and_compact_groups(store):
     detail=store.classroom_detail(row['id'])
     assert detail['attempts'][0]['input']['work']=='2048 bits = 2048 bytes'
     assert 'private text' in str(detail)
+
+@pytest.mark.parametrize('follow',[False,True])
+def test_explanation_visual_uses_final_answer_evidence(follow):
+    e=load_bank()['mem-06'];e=e['follow_up'] if follow else e
+    quote='Same address width means same capacity.'
+    a={'kind':'check','input':{'answer':quote,'work':''},'result':{'status':'incorrect','misconception':{'criterion':'concept','label':'Addressability','evidence':quote}}}
+    assert explanation(e,1,[a],[{'source':'book'}])['evidence']['evidence']==quote

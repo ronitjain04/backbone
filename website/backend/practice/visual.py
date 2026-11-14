@@ -15,7 +15,9 @@ def explanation(exercise,stage,attempts,chunks):
         result=attempt.get('result') or {}
         if result.get('status')=='correct':break
         finding=result.get('misconception')
-        text=attempt.get('input',{}).get('work','')
+        submitted=attempt.get('input',{})
+        text=submitted.get('work','')
+        if exercise['checker']['kind']=='explanation':text=submitted.get('answer','')+'\n'+text
         if finding and finding.get('evidence') and finding['evidence'] in text:
             evidence=finding;break
     return {'status':'visual','stage':stage,'message':STAGES[stage-1],

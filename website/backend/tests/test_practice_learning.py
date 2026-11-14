@@ -57,3 +57,11 @@ def test_expired_pending_hint_resolves_completed_outcome(store):
     with store.connect() as db:db.execute("UPDATE practice_submissions SET created_at=now()-interval '2 minutes' WHERE id=%s",(hint['id'],))
     store.begin_action(t,'num-01','hint','expired-00',{'answer':'','work':''})
     assert store.snapshot(t)['progress']['num-01']['outcome']=='solved_independently'
+
+def test_refresh_settles_abandoned_hint_and_late_worker_cannot_deliver_help(store):
+    t=store.create_student();hint=store.begin_action(t,'num-01','hint','abandon-00',{'answer':'','work':''})
+    finish(store,t,'num-01','correct-00',{'status':'correct'})
+    with store.connect() as db:db.execute("UPDATE practice_submissions SET created_at=now()-interval '2 minutes' WHERE id=%s",(hint['id'],))
+    assert store.snapshot(t)['progress']['num-01']['outcome']=='solved_independently'
+    assert store.finish_action(t,hint['id'],{'status':'hint','level':1,'message':'late help'})['status']=='unavailable'
+    assert len([e for e in store.events(t) if e['kind']=='outcome_recorded'])==1

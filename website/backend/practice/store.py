@@ -74,6 +74,17 @@ class Store(ClassroomStore):
             self.event(db,{'id':session},'session_started')
         return token
 
+    def expire_actions(self,db,s):
+        """Caller holds session lock. A worker cannot deliver a result after recovery expires it."""
+        expired=db.execute("SELECT * FROM practice_submissions WHERE session_id=%s AND result IS NULL AND created_at<clock_timestamp()-interval '90 seconds' ORDER BY created_at,id",(s['id'],)).fetchall()
+        for action in expired:
+            failed={'status':'unavailable','message':'The previous request was interrupted. Your work is saved; request another check or hint.','sources':[],'misconception':None}
+            db.execute('UPDATE practice_submissions SET result=%s WHERE id=%s',(Jsonb(failed),action['id']))
+            if action['kind']=='check':db.execute('INSERT INTO practice_feedback VALUES (%s,%s,DEFAULT)',(action['id'],Jsonb(failed)))
+            self.event(db,s,action['kind']+'_finished',action['exercise_id'],{'action_id':str(action['id']),**failed})
+            resolved=resolve_outcome(db,s['id'],action['exercise_id'])
+            if resolved:self.event(db,s,'outcome_recorded',action['exercise_id'],{'outcome':resolved})
+
     def exercise(self, token, exercise_id):
         with self.connect() as db:
             s=self.session(db,token)
@@ -83,7 +94,7 @@ class Store(ClassroomStore):
 
     def snapshot(self, token):
         with self.connect() as db:
-            s=self.session(db,token)
+            s=self.session(db,token,True);self.expire_actions(db,s)
             exercises=db.execute('SELECT definition FROM practice_exercises WHERE version=%s ORDER BY id',(s['bank_version'],)).fetchall()
             progress=db.execute('SELECT exercise_id,answer,work,revision,completed,hint_level,outcome FROM practice_progress WHERE session_id=%s',(s['id'],)).fetchall()
             actions=db.execute('SELECT id,exercise_id,kind,result,created_at FROM practice_submissions WHERE session_id=%s ORDER BY created_at,id',(s['id'],)).fetchall()
@@ -117,19 +128,11 @@ class Store(ClassroomStore):
 
     def begin_action(self, token, exercise_id, kind, request_key, content):
         with self.connect() as db:
-            s=self.session(db,token,True); self.ensure_progress(db,s,exercise_id)
+            s=self.session(db,token,True); self.ensure_progress(db,s,exercise_id);self.expire_actions(db,s)
             existing=db.execute('SELECT * FROM practice_submissions WHERE session_id=%s AND request_key=%s',(s['id'],request_key)).fetchone()
             if existing:
                 if existing['exercise_id']!=exercise_id or existing['kind']!=kind or existing['input']!=content:
                     raise Conflict('This request ID was already used with different work.')
-                if existing['result'] is None and datetime.now(timezone.utc)-existing['created_at']>timedelta(seconds=90):
-                    failed={'status':'unavailable','message':'The previous request was interrupted. Your work is saved; request another check or hint.','sources':[],'misconception':None}
-                    db.execute('UPDATE practice_submissions SET result=%s WHERE id=%s',(Jsonb(failed),existing['id']))
-                    if kind=='check':db.execute('INSERT INTO practice_feedback VALUES (%s,%s,DEFAULT)',(existing['id'],Jsonb(failed)))
-                    self.event(db,s,kind+'_finished',exercise_id,{'action_id':str(existing['id']),**failed})
-                    existing['result']=failed
-                    resolved=resolve_outcome(db,s['id'],exercise_id)
-                    if resolved:self.event(db,s,'outcome_recorded',exercise_id,{'outcome':resolved})
                 return {'id':str(existing['id']),'result':existing['result'],'new':False,'hint_level':existing['hint_level']}
             if db.execute("SELECT count(*) AS n FROM practice_submissions WHERE session_id=%s AND created_at>now()-interval '1 minute'",(s['id'],)).fetchone()['n']>=12:
                 raise RateLimited('You have made several requests. Please wait a minute before another check or hint.')
@@ -147,7 +150,7 @@ class Store(ClassroomStore):
 
     def finish_action(self, token, action_id, result):
         with self.connect() as db:
-            s=self.session(db,token,True)
+            s=self.session(db,token,True);self.expire_actions(db,s)
             action=db.execute('SELECT * FROM practice_submissions WHERE session_id=%s AND id=%s',(s['id'],UUID(str(action_id)))).fetchone()
             if not action: raise Unauthorized('Action not found')
             if action['result'] is not None: return action['result']

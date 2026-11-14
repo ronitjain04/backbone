@@ -137,13 +137,15 @@ def create_router(store=None, resources=lambda:{}):
     @router.post('/visual')
     async def visual(body:Visual,request:Request):
         student=token(request)
+        content={k:getattr(body,k) for k in ('stage','address_bits','bits_per_location')}
+        cached=await db('visual_retry',student,body.exercise_id,body.request_key,content)
+        if cached is not None:return cached
         exercise=await db('exercise',student,body.exercise_id)
         attempts=await db('attempts',student,body.exercise_id)
         retriever=resources().get('retrievers',{}).get('cs2110')
         chunks=await asyncio.to_thread(grounded_chunks,exercise,retriever,'memory addressability capacity')
         result=explanation(exercise,body.stage,attempts,chunks)
         if result['status']=='unavailable':return result
-        content={k:getattr(body,k) for k in ('stage','address_bits','bits_per_location')}
         return await db('visual',student,body.exercise_id,body.request_key,content,result)
 
     @router.get('/events')

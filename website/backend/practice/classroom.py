@@ -28,6 +28,15 @@ class ClassroomStore:
                 self.event(db,s,'presence_changed',payload={'tab_id':tab_id,'connected':connected})
         return {'accepted':True}
 
+    def visual_retry(self,token,exercise_id,key,content):
+        from .store import Conflict
+        with self.connect() as db:
+            s=self.session(db,token)
+            existing=db.execute('SELECT input,result FROM practice_interactions WHERE session_id=%s AND request_key=%s',(s['id'],key)).fetchone()
+            if not existing:return None
+            if existing['input']!={'exercise_id':exercise_id,**content}:raise Conflict('This request ID was already used with different visual settings.')
+            return existing['result']
+
     def visual(self,token,exercise_id,key,content,result):
         from .store import Conflict
         if exercise_id not in SUPPORTED:raise KeyError('No visual')
@@ -57,6 +66,9 @@ class ClassroomStore:
               FROM practice_sessions s JOIN practice_students st ON st.id=s.student_id ORDER BY s.created_at DESC LIMIT 100''').fetchall()
             results=[];now=datetime.now(timezone.utc)
             for s in rows:
+                if db.execute("SELECT 1 FROM practice_submissions WHERE session_id=%s AND result IS NULL AND created_at<clock_timestamp()-interval '90 seconds'",(s['id'],)).fetchone():
+                    db.execute('SELECT id FROM practice_sessions WHERE id=%s FOR UPDATE',(s['id'],))
+                    self.expire_actions(db,s)
                 eid=s['selected_exercise'];definition=db.execute('SELECT definition FROM practice_exercises WHERE version=%s AND id=%s',(s['bank_version'],eid)).fetchone()['definition']
                 progress=db.execute('SELECT exercise_id,outcome,hint_level,completed FROM practice_progress WHERE session_id=%s',(s['id'],)).fetchall()
                 latest=db.execute("SELECT id,input,result,created_at FROM practice_submissions WHERE session_id=%s AND exercise_id=%s AND kind='check' AND result IS NOT NULL ORDER BY created_at DESC,id DESC LIMIT 1",(s['id'],eid)).fetchone()
