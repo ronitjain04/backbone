@@ -1,0 +1,85 @@
+{
+  "environment": "hosted Vercel review + isolated Neon branch + existing Groq model + actual private corpus",
+  "cases": [
+    {
+      "exercise": "mem-06",
+      "category": "alternative explanation",
+      "expected": "correct",
+      "actual": "correct",
+      "matched": true,
+      "latency_ms": 1734.66,
+      "citations": 1,
+      "valid_citations": 1,
+      "evidence_verbatim": true,
+      "model": "openai/gpt-oss-20b"
+    },
+    {
+      "exercise": "mem-06",
+      "category": "misconception",
+      "expected": "incorrect",
+      "actual": "incorrect",
+      "matched": true,
+      "latency_ms": 1423.09,
+      "citations": 2,
+      "valid_citations": 2,
+      "evidence_verbatim": true,
+      "model": "openai/gpt-oss-20b"
+    },
+    {
+      "exercise": "mem-06",
+      "category": "ambiguous",
+      "expected": "needs_clarification",
+      "actual": "unavailable",
+      "matched": false,
+      "latency_ms": 796.13,
+      "citations": 5,
+      "valid_citations": 5,
+      "evidence_verbatim": true,
+      "model": "not returned; deterministic check or conservative fallback"
+    },
+    {
+      "exercise": "lc3-06",
+      "category": "alternative explanation",
+      "expected": "correct",
+      "actual": "unavailable",
+      "matched": false,
+      "latency_ms": 770.85,
+      "citations": 6,
+      "valid_citations": 6,
+      "evidence_verbatim": true,
+      "model": "not returned; deterministic check or conservative fallback"
+    },
+    {
+      "exercise": "num-01",
+      "category": "alternative reasoning",
+      "expected": "correct",
+      "actual": "needs_clarification",
+      "matched": false,
+      "latency_ms": 441.88,
+      "citations": 5,
+      "valid_citations": 5,
+      "evidence_verbatim": true,
+      "model": "not returned; deterministic check or conservative fallback"
+    },
+    {
+      "exercise": "num-01",
+      "category": "first supported error",
+      "expected": "incorrect",
+      "actual": "incorrect",
+      "matched": true,
+      "latency_ms": 375.11,
+      "citations": 5,
+      "valid_citations": 5,
+      "evidence_verbatim": true,
+      "model": "not returned; deterministic check or conservative fallback"
+    }
+  ],
+  "latency_ms": {
+    "n": 6,
+    "p50": 770.85,
+    "p95": 1734.66,
+    "max": 1734.66
+  },
+  "matched": 3,
+  "total": 6
+}

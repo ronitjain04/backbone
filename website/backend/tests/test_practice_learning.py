@@ -65,3 +65,22 @@ def test_refresh_settles_abandoned_hint_and_late_worker_cannot_deliver_help(stor
     assert store.snapshot(t)['progress']['num-01']['outcome']=='solved_independently'
     assert store.finish_action(t,hint['id'],{'status':'hint','level':1,'message':'late help'})['status']=='unavailable'
     assert len([e for e in store.events(t) if e['kind']=='outcome_recorded'])==1
+
+def test_concurrent_duplicate_reservation_and_finish_create_one_outcome(store):
+    from concurrent.futures import ThreadPoolExecutor
+    t=store.create_student()
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        reserved=list(pool.map(lambda _:store.begin_action(t,'num-01','check','concurrent-00',{'answer':'45','work':''}),range(8)))
+    assert sum(a['new'] for a in reserved)==1 and len({a['id'] for a in reserved})==1
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results=list(pool.map(lambda _:store.finish_action(t,reserved[0]['id'],{'status':'correct'}),range(8)))
+    assert all(r==results[0] for r in results)
+    kinds=[e['kind'] for e in store.events(t)]
+    assert kinds.count('check_requested')==kinds.count('check_finished')==kinds.count('outcome_recorded')==1
+
+def test_global_tutoring_budget_rejects_sixty_first_action_but_not_retries(store):
+    from website.backend.practice.store import RateLimited
+    t=store.create_student();store.begin_action(t,'num-01','check','existing-00',{'answer':'45','work':''})
+    with store.connect() as db:db.execute("UPDATE practice_budgets SET used=60 WHERE kind='action'")
+    assert not store.begin_action(t,'num-01','check','existing-00',{'answer':'45','work':''})['new']
+    with pytest.raises(RateLimited):store.begin_action(t,'num-01','check','too-many-00',{'answer':'45','work':''})
