@@ -105,9 +105,9 @@ function replay(){
   if(prior.kind.endsWith('_finished'))results.push(prior.payload);
  }
  target.append(node('h4','Submitted work'),node('pre',answer),node('pre',work));
- for(const r of results){target.append(node('h4',r.status),node('p',r.message??''));if(r.misconception)target.append(node('blockquote',r.misconception.evidence));sources(target,r.sources)}
+ for(const r of results){target.append(node('h4',r.status),node('p',r.message??''));if(r.misconception)target.append(node('blockquote',r.misconception.evidence));if(r.sources?.length){const details=node('details','');details.append(node('summary','Supporting sources for this step'));sources(details,r.sources);target.append(details)}}
 }
-function showReplay(items){events=items;$('practice-replay-panel').hidden=false;$('replay-step').max=String(Math.max(0,events.length-1));$('replay-step').value=String(Math.max(0,events.length-1));replay()}
+function showReplay(items){events=items;$('practice-replay-panel').hidden=false;$('replay-step').max=String(Math.max(0,events.length-1));$('replay-step').value=String(Math.max(0,events.length-1));replay();const panel=$('practice-replay-panel');panel.tabIndex=-1;panel.focus({preventScroll:true});panel.scrollIntoView?.({behavior:'smooth',block:'start'})}
 $('practice-replay').addEventListener('click',async()=>{try{await flush();showReplay((await api('events')).events)}catch(err){error(err)}});
 $('replay-step').addEventListener('input',replay);$('replay-close').addEventListener('click',()=>{$('practice-replay-panel').hidden=true});
 $('practice-owner-load').addEventListener('click',async()=>{
