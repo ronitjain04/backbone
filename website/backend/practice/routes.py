@@ -11,6 +11,7 @@ from .store import Store, Unauthorized, Conflict, RateLimited
 from .checking import check as deterministic_check, verdict
 from .assessment import assess, first_arithmetic_error
 from .hints import make_hint, grounded_chunks
+from .visual import explanation
 
 COOKIE='backbone_student'
 logger=logging.getLogger(__name__)
@@ -23,6 +24,17 @@ class Draft(BaseModel):
     revision: int = Field(default=0,ge=0)
 class Action(Draft):
     request_key: str = Field(min_length=8,max_length=100,pattern=r'^[a-zA-Z0-9-]+$')
+
+class Presence(BaseModel):
+    tab_id: UUID
+    sequence: int = Field(ge=0,le=9007199254740991)
+    connected: bool = True
+class Visual(BaseModel):
+    exercise_id: str = Field(pattern=r'^mem-(03|06)(-follow)?$')
+    request_key: str = Field(min_length=8,max_length=100,pattern=r'^[a-zA-Z0-9-]+$')
+    stage: int = Field(ge=1,le=3)
+    address_bits: int = Field(ge=1,le=8)
+    bits_per_location: int = Field(ge=1,le=32)
 
 
 def create_router(store=None, resources=lambda:{}):
@@ -118,12 +130,32 @@ def create_router(store=None, resources=lambda:{}):
     @router.post('/hint')
     async def hint(body:Action,request:Request):return await action('hint',body,request)
 
+    @router.post('/presence')
+    async def presence(body:Presence,request:Request):
+        return await db('presence',token(request),str(body.tab_id),body.sequence,body.connected)
+
+    @router.post('/visual')
+    async def visual(body:Visual,request:Request):
+        student=token(request)
+        exercise=await db('exercise',student,body.exercise_id)
+        attempts=await db('attempts',student,body.exercise_id)
+        retriever=resources().get('retrievers',{}).get('cs2110')
+        chunks=await asyncio.to_thread(grounded_chunks,exercise,retriever,'memory addressability capacity')
+        result=explanation(exercise,body.stage,attempts,chunks)
+        if result['status']=='unavailable':return result
+        content={k:getattr(body,k) for k in ('stage','address_bits','bits_per_location')}
+        return await db('visual',student,body.exercise_id,body.request_key,content,result)
+
     @router.get('/events')
     async def events(request:Request):return {'events':await db('events',token(request))}
 
     @router.get('/classroom')
     async def classroom(request:Request):
         owner(request);return {'sessions':await db('classroom')}
+
+    @router.get('/classroom/{session_id}/detail')
+    async def classroom_detail(session_id:UUID,request:Request):
+        owner(request);return await db('classroom_detail',str(session_id))
 
     @router.get('/classroom/{session_id}/events')
     async def classroom_events(session_id:UUID,request:Request):

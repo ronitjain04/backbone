@@ -2,7 +2,7 @@
 def conceptual_help(result):
     return bool(result.get('misconception')) or (
         result.get('status')=='incorrect' and result.get('reasoning_status')=='incorrect'
-        and any(c.get('status')=='not_met' and c.get('evidence') for c in result.get('criteria',[])))
+        and any(c.get('status')=='contradicted' and c.get('evidence') for c in result.get('criteria',[])))
 
 
 def resolve_outcome(db, session_id, exercise_id):

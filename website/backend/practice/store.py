@@ -10,6 +10,7 @@ from psycopg.conninfo import conninfo_to_dict
 from psycopg.types.json import Jsonb
 from .bank import BANK_VERSION, public_exercise
 from .learning import conceptual_help, resolve_outcome
+from .classroom import ClassroomStore
 
 CLASSROOM = UUID('681f864f-13a5-439b-a1db-5cac9b9ecb73')
 class Unauthorized(Exception): pass
@@ -17,7 +18,7 @@ class Conflict(Exception): pass
 class RateLimited(Exception): pass
 
 
-class Store:
+class Store(ClassroomStore):
     def __init__(self, dsn):
         self.dsn = dsn
 
@@ -86,7 +87,8 @@ class Store:
             exercises=db.execute('SELECT definition FROM practice_exercises WHERE version=%s ORDER BY id',(s['bank_version'],)).fetchall()
             progress=db.execute('SELECT exercise_id,answer,work,revision,completed,hint_level,outcome FROM practice_progress WHERE session_id=%s',(s['id'],)).fetchall()
             actions=db.execute('SELECT id,exercise_id,kind,result,created_at FROM practice_submissions WHERE session_id=%s ORDER BY created_at,id',(s['id'],)).fetchall()
-            return {'session_id':str(s['id']),'selected_exercise':s['selected_exercise'],'classroom':'CS 2110 · Guided practice','exercises':[public_exercise(r['definition']) for r in exercises],
+            visuals=db.execute('SELECT exercise_id,stage,address_bits,bits_per_location FROM practice_visuals WHERE session_id=%s',(s['id'],)).fetchall()
+            return {'visuals':{v['exercise_id']:{k:x for k,x in v.items() if k!='exercise_id'} for v in visuals},'session_id':str(s['id']),'selected_exercise':s['selected_exercise'],'classroom':'CS 2110 · Guided practice','exercises':[public_exercise(r['definition']) for r in exercises],
                     'progress':{r['exercise_id']:{k:v for k,v in r.items() if k!='exercise_id'} for r in progress},
                     'actions':[dict(r,id=str(r['id']),created_at=r['created_at'].isoformat()) for r in actions]}
 
@@ -177,11 +179,6 @@ class Store:
         with self.connect() as db:
             s=self.session(db,token)
             return [dict(r,at=r['at'].isoformat()) for r in db.execute('SELECT seq,at,kind,exercise_id,payload FROM practice_events WHERE session_id=%s ORDER BY seq',(s['id'],))]
-
-    def classroom(self):
-        with self.connect() as db:
-            rows=db.execute('SELECT s.id,st.display_name,s.created_at,count(p.exercise_id) FILTER (WHERE p.completed) AS completed FROM practice_sessions s JOIN practice_students st ON st.id=s.student_id LEFT JOIN practice_progress p ON p.session_id=s.id GROUP BY s.id,st.display_name ORDER BY s.created_at DESC LIMIT 100').fetchall()
-            return [dict(r,id=str(r['id']),created_at=r['created_at'].isoformat()) for r in rows]
 
     def classroom_events(self, session_id):
         with self.connect() as db:

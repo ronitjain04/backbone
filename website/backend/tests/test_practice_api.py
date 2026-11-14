@@ -92,3 +92,20 @@ def test_startup_can_bootstrap_practice_without_exposing_migrations(practice_dat
         assert result.status_code==200
         assert client.get('/api/practice/migrate').status_code==404
         client.post('/api/practice/delete',headers={'Origin':'http://testserver'})
+
+
+def test_presence_visual_and_teacher_detail_authorization(practice,monkeypatch):
+    from uuid import uuid4
+    client,_=practice;origin={'Origin':'http://testserver'}
+    s=client.post('/api/practice/start',json={},headers=origin).json()
+    assert client.post('/api/practice/presence',json={'tab_id':str(uuid4()),'sequence':1},headers=origin).status_code==200
+    assert client.get(f"/api/practice/classroom/{s['session_id']}/detail").status_code==401
+    monkeypatch.setenv('PRACTICE_OWNER_TOKEN','test-teacher-secret')
+    owner={'X-Practice-Owner':'test-teacher-secret'}
+    assert client.get('/api/practice/classroom',headers=owner).json()['sessions'][0]['presence']=='active'
+    assert client.get(f"/api/practice/classroom/{s['session_id']}/detail",headers=owner).status_code==200
+    visual={'exercise_id':'mem-03','request_key':'visual-001','stage':1,'address_bits':2,'bits_per_location':4}
+    assert client.post('/api/practice/visual',json=visual,headers=origin).json()['status']=='unavailable'
+    assert client.get('/api/practice/state').json()['visuals']=={}
+    assert client.post('/api/practice/visual',json={**visual,'stage':4},headers=origin).status_code==422
+    assert client.post('/api/practice/select',json={'exercise_id':'mem-03-follow'},headers=origin).status_code==409
