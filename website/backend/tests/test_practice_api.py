@@ -50,7 +50,8 @@ def test_checks_hints_and_replay_persist_across_requests(practice):
     assert client.get('/api/practice/state').json()['progress']['num-01']['completed'] is True
     events=client.get('/api/practice/events').json()['events']
     assert [e['kind'] for e in events].count('check_requested')==1
-    assert events[-1]['kind']=='check_finished'
+    assert events[-2]['kind']=='check_finished'
+    assert events[-1]['payload']['outcome']=='solved_independently'
     # No private course corpus is configured in this API fixture: hints must fail honestly.
     hinted=client.post('/api/practice/hint',json={**action,'request_key':'hint-unique-001'},headers=origin)
     assert hinted.json()['status']=='unavailable'

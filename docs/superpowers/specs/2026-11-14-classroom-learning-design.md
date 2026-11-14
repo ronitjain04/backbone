@@ -1,6 +1,6 @@
 # Interactive learning and classroom demo
 
-Date: 2026-11-14. Status: proposed for approval.
+Date: 2026-11-14. Status: approved by the user; implementation authorized.
 
 ## Intent and scope
 
