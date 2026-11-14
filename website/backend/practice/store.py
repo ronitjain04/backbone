@@ -128,6 +128,8 @@ class Store(ClassroomStore):
                     if kind=='check':db.execute('INSERT INTO practice_feedback VALUES (%s,%s,DEFAULT)',(existing['id'],Jsonb(failed)))
                     self.event(db,s,kind+'_finished',exercise_id,{'action_id':str(existing['id']),**failed})
                     existing['result']=failed
+                    resolved=resolve_outcome(db,s['id'],exercise_id)
+                    if resolved:self.event(db,s,'outcome_recorded',exercise_id,{'outcome':resolved})
                 return {'id':str(existing['id']),'result':existing['result'],'new':False,'hint_level':existing['hint_level']}
             if db.execute("SELECT count(*) AS n FROM practice_submissions WHERE session_id=%s AND created_at>now()-interval '1 minute'",(s['id'],)).fetchone()['n']>=12:
                 raise RateLimited('You have made several requests. Please wait a minute before another check or hint.')

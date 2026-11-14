@@ -4,6 +4,8 @@ from uuid import UUID
 from psycopg.types.json import Jsonb
 from .visual import SUPPORTED
 
+CONCEPTS={'mem-01':'address-count','mem-02':'address-count','mem-03':'capacity','mem-04':'capacity-units','mem-05':'capacity','mem-06':'addressability','num-01':'place-value','num-02':'signed-decoding','num-03':'negation','num-04':'signed-range','num-05':'overflow','num-06':'bitwise-mask','lc3-01':'register-arithmetic','lc3-02':'register-not','lc3-03':'condition-codes','lc3-04':'pc-relative','lc3-05':'register-program','lc3-06':'load-address'}
+
 
 def presence_label(age,connected):
     if not connected or age is None or age>120:return 'disconnected'
@@ -71,9 +73,9 @@ class ClassroomStore:
                     'current_exercise':eid,'exercise_title':definition['title'],'topic':definition['topic'],
                     'last_activity':s['last_activity'].isoformat() if s['last_activity'] else None,
                     'last_signal':s['any_signal'].isoformat() if s['any_signal'] else None,'presence':presence_label(age,bool(signal)),
-                    'completed':s['completed'],'hints_used':sum(p['hint_level'] for p in progress),
+                    'completed':s['completed'],'hints_used':db.execute('SELECT count(*) AS n FROM practice_hints h JOIN practice_submissions a ON a.id=h.submission_id WHERE a.session_id=%s',(s['id'],)).fetchone()['n'],
                     'diagnosis':diagnosis,'clarification_needed':clarify,
-                    'group_key':definition['topic']+':'+str(diagnosis.get('criterion','supported')) if diagnosis else 'clarification' if clarify else None,
+                    'group_key':definition['topic']+':'+CONCEPTS.get(base,base)+':'+str(diagnosis.get('criterion','supported')) if diagnosis else 'clarification' if clarify else None,
                     'parent_outcome':ps.get(base,{}).get('outcome'),'follow_up_outcome':ps.get(base+'-follow',{}).get('outcome')})
             return results
 

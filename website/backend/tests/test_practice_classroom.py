@@ -49,7 +49,7 @@ def test_classroom_evidence_and_compact_groups(store):
     store.finish_action(t,a['id'],{'status':'incorrect','message':'Revisit the units','misconception':{'criterion':'concept','label':'Arithmetic','evidence':'2048 bits = 2048 bytes','method':'deterministic equality check'},'sources':[{'source':'book','text':'private text'}]})
     row=store.classroom()[0]
     assert row['current_exercise']=='mem-03' and row['diagnosis']['evidence']=='2048 bits = 2048 bytes'
-    assert row['group_key']=='memory:concept' and 'private text' not in str(row)
+    assert row['group_key']=='memory:capacity:concept' and 'private text' not in str(row)
     detail=store.classroom_detail(row['id'])
     assert detail['attempts'][0]['input']['work']=='2048 bits = 2048 bytes'
     assert 'private text' in str(detail)

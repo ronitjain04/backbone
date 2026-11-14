@@ -1,7 +1,7 @@
 """Conservative attribution from persisted assistance, never from client flags."""
 def conceptual_help(result):
     return bool(result.get('misconception')) or (
-        result.get('status')=='incorrect' and result.get('reasoning_status')=='incorrect'
+        result.get('status')=='incorrect'
         and any(c.get('status')=='contradicted' and c.get('evidence') for c in result.get('criteria',[])))
 
 

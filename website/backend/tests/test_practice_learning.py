@@ -45,3 +45,15 @@ def test_historical_completion_and_migration_rerun(store):
     store.migrate();store.migrate()
     assert store.snapshot(t)['progress']['num-01']['outcome']=='historical_unclassified'
     with store.connect() as db:assert db.execute('SELECT count(*) AS n FROM practice_migrations').fetchone()['n']==2
+
+def test_corrective_rubric_without_named_misconception_counts_as_help(store):
+    t=store.create_student()
+    finish(store,t,'mem-06','rubric-000',{'status':'incorrect','message':'Address width counts locations, not bits at a location.','criteria':[{'id':'concept','status':'contradicted','evidence':'same width means same storage'}]})
+    assert finish(store,t,'mem-06','correct-00',{'status':'correct'})['outcome']=='corrected_with_help'
+
+def test_expired_pending_hint_resolves_completed_outcome(store):
+    t=store.create_student();hint=store.begin_action(t,'num-01','hint','expired-00',{'answer':'','work':''})
+    finish(store,t,'num-01','correct-00',{'status':'correct'})
+    with store.connect() as db:db.execute("UPDATE practice_submissions SET created_at=now()-interval '2 minutes' WHERE id=%s",(hint['id'],))
+    store.begin_action(t,'num-01','hint','expired-00',{'answer':'','work':''})
+    assert store.snapshot(t)['progress']['num-01']['outcome']=='solved_independently'
