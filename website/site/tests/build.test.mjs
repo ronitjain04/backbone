@@ -39,9 +39,10 @@ test('Vercel static build contains only browser assets and local math fonts',asy
  const {readFile,readdir}=await import('node:fs/promises');
  execFileSync(process.execPath,['build-static.mjs'],{cwd:new URL('..',import.meta.url),stdio:'pipe'});
  const root=new URL('../../public/',import.meta.url);
- assert.deepEqual((await readdir(root)).sort(),['app.js','fonts','index.html','katex.css','styles.css']);
+ assert.deepEqual((await readdir(root)).sort(),['app.js','fonts','index.html','katex.css','practice.html','practice.js','styles.css']);
  assert.ok((await readFile(new URL('index.html',root),'utf8')).includes('Backbone'));
  assert.ok(!(await readFile(new URL('app.js',root),'utf8')).includes('BACKEND_TOKEN'));
+ assert.ok(!(await readFile(new URL('practice.js',root),'utf8')).includes('11110011'));
  const font=(await readdir(new URL('fonts/',root)))[0];
  assert.equal((await readFile(new URL('fonts/'+font,root))).subarray(0,4).toString(),'wOF2');
 });
