@@ -210,7 +210,7 @@ def test_api_promotion_failure_is_controlled_and_does_not_leak_response(monkeypa
 def test_public_verification_waits_for_async_promotion_but_stays_bounded(monkeypatch):
  from scripts import release as module
  calls=[];delays=[]
- monkeypatch.setattr(module,'PublicTransport',lambda url:object())
+ monkeypatch.setattr(module,'PublicTransport',lambda url,**kw:object())
  monkeypatch.setattr(module.time,'sleep',delays.append)
  def eventually(transport,commit):
   calls.append(commit)
@@ -223,3 +223,11 @@ def test_public_verification_waits_for_async_promotion_but_stays_bounded(monkeyp
  monkeypatch.setattr(module,'verify_target',never)
  with pytest.raises(ReleaseError):module.VercelOps().verify_alias('https://backbone-study.vercel.app',SHA)
  assert len(calls)==20 and len(delays)==19
+
+
+def test_public_verification_deadline_stops_network_requests(monkeypatch):
+ from scripts import release as module
+ monkeypatch.setattr(module.time,'monotonic',lambda:100)
+ transport=module.PublicTransport('https://backbone-study.vercel.app',deadline=99)
+ monkeypatch.setattr(transport.opener,'open',lambda *a,**kw:pytest.fail('Expired verification budget'))
+ with pytest.raises(ReleaseError,match='deadline'):transport.request('/health')

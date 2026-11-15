@@ -149,12 +149,16 @@ class CandidateTransport:
 
 
 class PublicTransport:
-    def __init__(self,base):self.base=validated_url(base);self.opener=build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    def __init__(self,base,*,deadline=None):
+        self.base=validated_url(base);self.deadline=deadline
+        self.opener=build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
     def request(self,path,data=None):
         payload=None if data is None else json.dumps(data).encode()
         req=Request(self.base+path,data=payload,headers={'Content-Type':'application/json','Origin':self.base,'User-Agent':'Backbone-GitHub-Actions'})
+        timeout=80 if self.deadline is None else min(80,self.deadline-time.monotonic())
+        if timeout<=0:raise ReleaseError('Public verification deadline exceeded')
         try:
-            with self.opener.open(req,timeout=80) as response:
+            with self.opener.open(req,timeout=timeout) as response:
                 raw=response.read().decode('utf-8')
                 return parse_reply(raw+'\nBACKBONE_HTTP:'+str(response.status))
         except HTTPError as error:
@@ -226,13 +230,15 @@ class VercelOps:
             raise ReleaseError('Vercel project promotion request failed; inspect project state before retrying') from None
     def verify_alias(self,url,commit):
         # The project API can accept promotion asynchronously (HTTP 202).
+        deadline=time.monotonic()+180
         for attempt in range(20):
             try:
-                verify_target(PublicTransport(url),commit)
+                verify_target(PublicTransport(url,deadline=deadline),commit)
                 return
             except ReleaseError:
-                if attempt==19:raise
-                time.sleep(3)
+                remaining=deadline-time.monotonic()
+                if attempt==19 or remaining<=0:raise
+                time.sleep(min(3,remaining))
 
 
 
