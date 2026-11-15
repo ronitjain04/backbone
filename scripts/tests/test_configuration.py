@@ -22,3 +22,10 @@ def test_pinned_development_tools_are_separate_from_production():
  assert all('==' in line for line in lines if line and not line.startswith('#'))
  assert any(line.startswith('pytest==') for line in lines)
  assert 'ruff' not in (ROOT/'website/backend/requirements.txt').read_text()
+
+def test_fixture_server_is_outside_vercel_root_and_excluded_from_production():
+ fixture=ROOT/'tests/browser/support/server.py'
+ assert fixture.exists()
+ assert not fixture.is_relative_to(ROOT/'website')
+ config=json.loads((ROOT/'website/vercel.json').read_text())
+ assert 'backend/tests/**' in config['functions']['backend/site.py']['excludeFiles']
