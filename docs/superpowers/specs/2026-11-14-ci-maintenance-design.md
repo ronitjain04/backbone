@@ -1,6 +1,6 @@
 # CI/CD hardening and targeted technical-debt removal
 
-Date: 2026-11-14. Status: proposed for approval.
+Date: 2026-11-14. Status: approved by the user; implementation authorized.
 
 ## Purpose and current state
 
