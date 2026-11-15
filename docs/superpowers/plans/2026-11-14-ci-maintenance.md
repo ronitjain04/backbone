@@ -60,4 +60,4 @@
 **Interfaces:** report links exact checks and timings, query counts, dependency advisory results, retained debt and staged-release/database limitations.
 - [x] Run full lint/tests/browser/migration/build/audit/workflow validation; document actual results and remaining gaps.
 - [x] Request fresh whole-branch code review against approved spec and review focus; fix material findings with RED/GREEN regressions and full green suite.
-- [ ] Push separate stacked PR, attach it, wait for final-head CI; update report and deliver without merging/publishing.
+- [x] Push separate stacked PR, attach it, wait for final-head CI; update report and deliver without merging/publishing.

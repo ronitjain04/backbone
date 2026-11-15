@@ -51,6 +51,12 @@ Main-revision checks reduce stale promotion risk but cannot make a Git push and 
 
 The reviewer found no Critical issues and four Important issues: concurrency across old/new workflow revisions; delete-versus-expiry recovery; lost public retry timing; and recovery metadata depending on app health. Five regression cases reproduced these gaps before fixes, and the full suite then passed. No Minor findings were deferred. The reviewer did not execute a production release, inspect production credentials/database state, certify legacy security, or independently rerun the supplied browser/audit checks. Those remain explicit scope/evidence limits, not inferred guarantees.
 
+## GitHub delivery evidence
+
+[PR 13](https://github.com/ronitjain04/backbone/pull/13) is stacked on classroom PR 12, which remains unchanged. [Source verification run 43660517335](https://github.com/ronitjain04/backbone/actions/runs/43660517335) passed quality/workflow/dependency, frontend/static build, backend/migration/release tests and full-stack Chromium jobs on Python 3.12/PostgreSQL 17. Browser CI successfully downloaded the upload-artifact v7 artifact through download-artifact v8. Production promotion was skipped for this PR as intended. The final PR-head checks are reverified before handoff.
+
+The first CI run found a clean-checkout fixture dependency: the backend release-smoke integration expected locally generated frontend assets. Its fixture now provides synthetic static files explicitly, and all 176 backend tests passed with generated `website/public` temporarily absent. Chromium continues checking the actual uploaded release artifact. This fixed test isolation without bypassing production asset verification.
+
 ## Retained debt / deliberate boundaries
 
 - The Sites connector confirmed the older publication is active at version 6. Its Worker gateway, explicit `build:sites` command, source identity and compatibility tests remain. This is a real consumer, not dead code to delete blindly.
