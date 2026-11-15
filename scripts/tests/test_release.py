@@ -106,11 +106,128 @@ def test_candidate_assets_require_real_html_and_nonempty_javascript():
  a.broken=True
  with pytest.raises(ReleaseError):verify_assets(a)
 
-def test_previous_deployment_uses_control_plane_even_when_app_is_broken(monkeypatch):
+def project_metadata(monkeypatch, data):
  from scripts import release as module
+ from io import BytesIO
+ monkeypatch.setenv('VERCEL_ORG_ID','team_synthetic')
+ monkeypatch.setenv('VERCEL_PROJECT_ID','prj_synthetic')
+ monkeypatch.setenv('VERCEL_TOKEN','synthetic-secret')
  calls=[]
- def cli(args,**kw):calls.append(args);return json.dumps({'id':'dpl_previous'})
- monkeypatch.setattr(module,'run_cli',cli)
+ def open_metadata(request, **kwargs):
+  calls.append((request,kwargs))
+  response=BytesIO(json.dumps(data).encode());response.status=202
+  return response
+ monkeypatch.setattr(module,'urlopen',open_metadata,raising=False)
+ return module,calls
+
+
+def test_previous_deployment_reads_configured_project_without_app_or_alias_lookup(monkeypatch):
+ module,calls=project_metadata(monkeypatch,{'id':'prj_synthetic','targets':{'production':{'id':'dpl_previous'}},'latestDeployments':[{'id':'dpl_unpromoted'}]})
+ monkeypatch.setattr(module,'run_cli',lambda *a,**kw:pytest.fail('No hostname CLI lookup'))
  monkeypatch.setattr(module,'PublicTransport',lambda *a:pytest.fail('Old app health must not be required'))
  assert module.VercelOps().previous('https://backbone-study.vercel.app')=='dpl_previous'
- assert calls[0][1]=='inspect'
+ request,kwargs=calls[0]
+ assert request.full_url=='https://api.vercel.com/v9/projects/prj_synthetic?teamId=team_synthetic'
+ assert request.get_header('Authorization')=='Bearer synthetic-secret'
+ assert kwargs['timeout']==30
+
+
+@pytest.mark.parametrize('data',[
+ {},{'id':'prj_other','targets':{'production':{'id':'dpl_previous'}}},
+ {'id':'prj_synthetic','targets':{}},
+ {'id':'prj_synthetic','targets':{'production':{'id':'invalid'}}},
+ {'id':'prj_synthetic','targets':None},
+])
+def test_previous_deployment_rejects_missing_or_invalid_project_target(monkeypatch,data):
+ module,_=project_metadata(monkeypatch,data)
+ with pytest.raises(ReleaseError):module.VercelOps().previous('https://backbone-study.vercel.app')
+
+
+def test_project_lookup_errors_do_not_expose_credentials_or_response(monkeypatch):
+ from urllib.error import HTTPError
+ module,_=project_metadata(monkeypatch,{})
+ def fail(*a,**kw):raise HTTPError('private-url',403,'synthetic-secret',{},None)
+ monkeypatch.setattr(module,'urlopen',fail)
+ with pytest.raises(ReleaseError) as error:module.VercelOps().previous('https://backbone-study.vercel.app')
+ assert '403' in str(error.value) and 'secret' not in str(error.value) and 'private' not in str(error.value)
+
+
+def test_cli_failure_reports_operation_and_safe_category_without_raw_details(monkeypatch):
+ import subprocess
+ from scripts import release as module
+ def run(*a,**kw):raise subprocess.CalledProcessError(1,['secret-token'],output='',stderr='Error: not authorized for secret-project using secret-token')
+ monkeypatch.setattr(module.subprocess,'run',run)
+ with pytest.raises(ReleaseError) as err:module.run_cli(['vercel','inspect','https://backbone-study.vercel.app'])
+ assert 'vercel inspect' in str(err.value) and 'authorization' in str(err.value)
+ assert 'secret' not in str(err.value)
+
+
+def test_cli_uses_existing_project_environment_without_explicit_team_discovery(monkeypatch):
+ from scripts import release as module
+ monkeypatch.setenv('VERCEL_ORG_ID','team_synthetic');calls=[]
+ monkeypatch.setenv('VERCEL_PROJECT_ID','prj_synthetic')
+ monkeypatch.setattr(module,'run_cli',lambda args,**kw:(calls.append(args) or '{}\nBACKBONE_HTTP:200'))
+ module.CandidateTransport('https://backbone-candidate.vercel.app','synthetic-cookie-path').request('/health')
+ assert '--scope' not in calls[0]
+ assert module.vercel_args('deploy','--prod')==['vercel','deploy','--prod']
+ assert module.vercel_args('promote','dpl_previous')==['vercel','promote','dpl_previous']
+
+
+def test_promotion_uses_verified_deployment_id_instead_of_hostname(monkeypatch):
+ from contextlib import contextmanager
+ module,calls=project_metadata(monkeypatch,{'id':'prj_synthetic','targets':{'production':{'id':'dpl_candidate'}}})
+ @contextmanager
+ def candidate(url):yield Transport()
+ ops=module.VercelOps()
+ monkeypatch.setattr(ops,'candidate',candidate)
+ monkeypatch.setattr(module,'verify_assets',lambda transport:None)
+ monkeypatch.setattr(module,'run_cli',lambda *a,**kw:pytest.fail('No CLI promotion discovery'))
+ url='https://backbone-candidate.vercel.app'
+ ops.verify_candidate(url,SHA)
+ ops.promote(url)
+ request,kwargs=calls[0]
+ assert request.full_url=='https://api.vercel.com/v10/projects/prj_synthetic/promote/dpl_candidate?teamId=team_synthetic'
+ assert request.get_method()=='POST' and request.data==b'{}'
+ assert request.get_header('Authorization')=='Bearer synthetic-secret'
+
+
+def test_promotion_rejects_an_unverified_url(monkeypatch):
+ from scripts import release as module
+ monkeypatch.setattr(module,'run_cli',lambda *a,**kw:pytest.fail('Unverified promotion'))
+ with pytest.raises(ReleaseError):module.VercelOps().promote('https://backbone-candidate.vercel.app')
+
+
+def test_api_promotion_failure_is_controlled_and_does_not_leak_response(monkeypatch):
+ from urllib.error import HTTPError
+ module,_=project_metadata(monkeypatch,{})
+ ops=module.VercelOps();ops.verified_candidates['https://backbone-candidate.vercel.app']='dpl_candidate'
+ def denied(*a,**kw):raise HTTPError('private-url',403,'synthetic-secret',{},None)
+ monkeypatch.setattr(module,'urlopen',denied)
+ with pytest.raises(ReleaseError) as error:ops.promote('https://backbone-candidate.vercel.app')
+ assert '403' in str(error.value) and 'secret' not in str(error.value) and 'private' not in str(error.value)
+
+
+def test_public_verification_waits_for_async_promotion_but_stays_bounded(monkeypatch):
+ from scripts import release as module
+ calls=[];delays=[]
+ monkeypatch.setattr(module,'PublicTransport',lambda url,**kw:object())
+ monkeypatch.setattr(module.time,'sleep',delays.append)
+ def eventually(transport,commit):
+  calls.append(commit)
+  if len(calls)<3:raise ReleaseError('old revision')
+ monkeypatch.setattr(module,'verify_target',eventually)
+ module.VercelOps().verify_alias('https://backbone-study.vercel.app',SHA)
+ assert len(calls)==3 and delays==[3,3]
+ calls.clear();delays.clear()
+ def never(*args):calls.append(1);raise ReleaseError('old revision')
+ monkeypatch.setattr(module,'verify_target',never)
+ with pytest.raises(ReleaseError):module.VercelOps().verify_alias('https://backbone-study.vercel.app',SHA)
+ assert len(calls)==20 and len(delays)==19
+
+
+def test_public_verification_deadline_stops_network_requests(monkeypatch):
+ from scripts import release as module
+ monkeypatch.setattr(module.time,'monotonic',lambda:100)
+ transport=module.PublicTransport('https://backbone-study.vercel.app',deadline=99)
+ monkeypatch.setattr(transport.opener,'open',lambda *a,**kw:pytest.fail('Expired verification budget'))
+ with pytest.raises(ReleaseError,match='deadline'):transport.request('/health')
