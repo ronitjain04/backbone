@@ -104,9 +104,9 @@ def release(commit,site_url,ops):
 
 
 def vercel_args(*arguments):
-    args=['vercel',*arguments]
-    if os.getenv('VERCEL_ORG_ID'):args+=['--scope',os.environ['VERCEL_ORG_ID']]
-    return args
+    # VERCEL_ORG_ID and VERCEL_PROJECT_ID already bind CI to its project.
+    # Explicit --scope triggers team discovery unavailable to project credentials.
+    return ['vercel',*arguments]
 
 
 def run_cli(args,*,cwd=ROOT):

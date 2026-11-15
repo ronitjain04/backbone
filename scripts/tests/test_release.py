@@ -160,9 +160,12 @@ def test_cli_failure_reports_operation_and_safe_category_without_raw_details(mon
  assert 'secret' not in str(err.value)
 
 
-def test_candidate_curl_scope_is_not_forwarded_as_a_curl_argument(monkeypatch):
+def test_cli_uses_existing_project_environment_without_explicit_team_discovery(monkeypatch):
  from scripts import release as module
  monkeypatch.setenv('VERCEL_ORG_ID','team_synthetic');calls=[]
+ monkeypatch.setenv('VERCEL_PROJECT_ID','prj_synthetic')
  monkeypatch.setattr(module,'run_cli',lambda args,**kw:(calls.append(args) or '{}\nBACKBONE_HTTP:200'))
  module.CandidateTransport('https://backbone-candidate.vercel.app','synthetic-cookie-path').request('/health')
- assert calls[0].index('--scope')<calls[0].index('--')
+ assert '--scope' not in calls[0]
+ assert module.vercel_args('deploy','--prod')==['vercel','deploy','--prod']
+ assert module.vercel_args('promote','dpl_previous')==['vercel','promote','dpl_previous']
