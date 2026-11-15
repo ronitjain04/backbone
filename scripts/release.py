@@ -65,7 +65,7 @@ def verify_target(transport,commit,*,practice=False):
         raise ReleaseError('Deployment is not serving the tested commit')
     if not {'cs2110','cs2200'}.issubset(checked(transport,'/ready').get('courses',[])):
         raise ReleaseError('Deployment is missing a configured course')
-    if not practice:return
+    if not practice:return health
     started=checked(transport,'/api/practice/start',{'name':'CI release verification'})
     if not started.get('session_id'):raise ReleaseError('Could not create the disposable practice session')
     try:
@@ -85,6 +85,7 @@ def verify_target(transport,commit,*,practice=False):
     finally:
         if checked(transport,'/api/practice/delete',{}).get('deleted') is not True:
             raise ReleaseError('Disposable verification session cleanup failed')
+    return health
 
 
 def release(commit,site_url,ops):
@@ -163,6 +164,7 @@ class PublicTransport:
 
 
 class VercelOps:
+    def __init__(self):self.verified_candidates={}
     def previous(self,site):
         # Read the configured project's live target, never its newest staged build.
         # Application health and hostname-based CLI discovery are not prerequisites.
@@ -199,8 +201,15 @@ class VercelOps:
     def verify_candidate(self,url,commit):
         with self.candidate(url) as transport:
             verify_assets(transport)
-            verify_target(transport,commit,practice=True)
-    def promote(self,url):run_cli(vercel_args('promote',url,'--yes','--timeout','3m','--cwd','website'))
+            health=verify_target(transport,commit,practice=True)
+        identifier=health.get('instance','')
+        if not isinstance(identifier,str) or not re.fullmatch('dpl_[A-Za-z0-9]+',identifier):
+            raise ReleaseError('Verified candidate has no valid deployment ID')
+        self.verified_candidates[url]=identifier
+    def promote(self,url):
+        identifier=self.verified_candidates.get(url)
+        if not identifier:raise ReleaseError('Cannot promote a candidate without completed verification')
+        run_cli(vercel_args('promote',identifier,'--yes','--timeout','3m','--cwd','website'))
     def verify_alias(self,url,commit):verify_target(PublicTransport(url),commit)
 
 
