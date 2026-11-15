@@ -1,7 +1,6 @@
 """PostgreSQL persistence; every mutation owns the session lock and its events."""
 import hashlib
 import secrets
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from uuid import uuid4, UUID
 import psycopg
@@ -11,11 +10,9 @@ from psycopg.types.json import Jsonb
 from .bank import BANK_VERSION, public_exercise
 from .learning import conceptual_help, resolve_outcome
 from .classroom import ClassroomStore
+from .errors import Unauthorized, Conflict, RateLimited
 
 CLASSROOM = UUID('681f864f-13a5-439b-a1db-5cac9b9ecb73')
-class Unauthorized(Exception): pass
-class Conflict(Exception): pass
-class RateLimited(Exception): pass
 
 
 class Store(ClassroomStore):

@@ -24,3 +24,6 @@ website/private-data/
 
 # Explicitly built public browser assets
 website/public/
+
+# Synthetic browser CI artifacts
+/test-results/

@@ -1,4 +1,3 @@
-import os
 import pytest
 from fastapi.testclient import TestClient
 from website.backend.app import create_app
@@ -38,7 +37,6 @@ def test_cross_origin_and_classroom_access_are_rejected(practice):
     assert client.post('/api/practice/start',content='x'*33000,headers={'Origin':'http://testserver','Content-Type':'application/json'}).status_code==413
 
 def test_checks_hints_and_replay_persist_across_requests(practice):
-    from website.backend.retrieval import Retriever
     client,store=practice
     origin={'Origin':'http://testserver'}
     client.post('/api/practice/start',json={},headers=origin)

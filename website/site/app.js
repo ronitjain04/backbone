@@ -60,7 +60,7 @@ suggestions.forEach(button=>button.addEventListener('click',()=>{if(states[selec
 tabs.forEach((tab,index)=>{
  tab.addEventListener('click',()=>selectCourse(tab.dataset.course));
  tab.addEventListener('keydown',e=>{
-  let next=index;
+  let next;
   if(e.key==='ArrowRight')next=(index+1)%tabs.length;
   else if(e.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;
   else if(e.key==='Home')next=0;

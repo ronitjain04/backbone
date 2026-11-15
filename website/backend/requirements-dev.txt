@@ -1,0 +1,6 @@
+# CI and local verification tools, excluded from production runtime dependencies.
+pytest==9.2.0
+ruff==0.17.5
+pip-audit==2.10.1
+pytest-playwright==0.10.0
+playwright==1.65.2

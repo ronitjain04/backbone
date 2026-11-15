@@ -1,7 +1,7 @@
 import asyncio
 import json
 from website.backend.practice.bank import load_bank
-from website.backend.practice.assessment import assess, validate_assessment
+from website.backend.practice.assessment import assess
 
 CHUNKS=[{'source':'Book','details':'p. 76','text':'Addressability is bits stored per location.'}]
 

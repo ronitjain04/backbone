@@ -1,7 +1,6 @@
 import pytest
 from website.backend.practice.bank import load_bank
 from website.backend.practice.checking import check, parse_number
-from website.backend.practice.lc3 import check_program
 
 @pytest.mark.parametrize('answer',['45','32 + 8 + 4 + 1','0x2d','0b101101','2^5+2^3+2^2+1'])
 def test_accepts_equivalent_calculations(answer):

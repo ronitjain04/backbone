@@ -40,3 +40,10 @@ test('memory help waits for a persisted response and restores actual recovered s
  assert.match(root.textContent,/3 address bits → 8 distinct locations/);
  assert.equal(root.querySelectorAll('.memory-row').length,8);visual.destroy();
 });
+
+test('legacy correct attempts retain conservative historical completion in replay',()=>{
+ const old=[{kind:'check_finished',exercise_id:'num-01',payload:{status:'correct'}}];
+ assert.equal(reduceEvents(old,0).exercises['num-01'].outcome,'historical_unclassified');
+ old.push({kind:'outcome_recorded',exercise_id:'num-01',payload:{outcome:'solved_independently'}});
+ assert.equal(reduceEvents(old,1).exercises['num-01'].outcome,'solved_independently');
+});

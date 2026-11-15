@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8000 CORPUS_PATH=/app/website/backend/data/demo.jsonl RETRIEVAL_MODE=lexical
 COPY website/backend/requirements.txt /tmp/requirements.txt

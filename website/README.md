@@ -12,37 +12,27 @@ The website has CS 2110 and CS 2200 tabs with separate local chat histories and 
 
 The CS 2200 starter collection contains six **original demo notes**, not Georgia Tech slides or textbook excerpts. Production private course data is not included. The default demo uses lightweight lexical retrieval; optional `RETRIEVAL_MODE=semantic` uses normalized sentence embeddings and a FAISS inner-product index. The previous sibling app's API contract and grounding approach are preserved; this deployment uses explicit JSONL documents rather than runtime pickle loading.
 
-## Local preview
+## Local development (Vercel/FastAPI)
 
-Node.js 24 is the tested website build/preview baseline. From the repository root:
+Use Node.js 24 and Python 3.12. From the repository root:
 
 ```sh
+python3.12 -m venv website/.venv
+website/.venv/bin/pip install -r website/backend/requirements.txt -r website/backend/requirements-dev.txt
 npm --prefix website/site ci
-node website/site/dev.mjs
+export PYTHON="$PWD/website/.venv/bin/python"
+npm --prefix website/site run dev
 ```
 
-Open http://127.0.0.1:4173. The introduction and chat are available immediately; without backend configuration, sending a question displays an honest service-not-connected message and preserves the question.
+Open http://127.0.0.1:4173. The launcher builds static assets and starts the same combined FastAPI gateway as Vercel, including practice and teacher routes. `PORT` changes the port; `PYTHON` selects the virtual environment. Missing Python/dependencies produce setup guidance. No separate chat-only Node proxy or `BACKEND_URL` is needed for this local workflow.
 
-## Start a live backend
+Set the values from `backend/.env.example` in your shell or hosting secret manager. `.env` examples are **not automatically loaded**. Keep model/service credentials server-side. Configure `DATABASE_URL` and run `python -m website.backend.tools.migrate_practice` for saved practice. Without database/model configuration the page remains available and the affected API reports unavailable, rather than inventing a result.
 
-Python 3.11 is the tested baseline. Create an environment and install:
+`MODEL_PROVIDER=compatible` uses a chat-completions-compatible API; `MODEL_BASE_URL` includes its version prefix. `MODEL_PROVIDER=ollama` uses native `/api/generate`. Set the actual model/provider credential; no inference key is provisioned here. The original demo corpus is `website/backend/data/demo.jsonl`; set `CORPUS_PATH` or course-specific private corpus paths as described below. `RETRIEVAL_MODE=lexical` is the lightweight default.
 
-```sh
-python3 -m venv website/.venv
-website/.venv/bin/pip install -r website/backend/requirements.txt
-```
+`/health` reports process/revision liveness; `/ready` and `/api/status?course=...` check loaded course/model configuration, not provider quota. Saved practice has its own database dependency. Chat history remains browser-owned and bounded per course; saved practice and replay live in PostgreSQL.
 
-Set the values from `backend/.env.example` in your shell or hosting secret manager. `.env` files are examples only and are **not automatically loaded**. Never place keys in browser files or command-line arguments. `MODEL_PROVIDER=compatible` uses a chat-completions-compatible HTTP API; `MODEL_BASE_URL` includes its version prefix. `MODEL_PROVIDER=ollama` uses the native `/api/generate` endpoint and the origin as its base URL. Set the provider's real model name and credential. No external inference key is created by this project.
-
-```sh
-export CORPUS_PATH=website/backend/data/demo.jsonl
-export RETRIEVAL_MODE=lexical
-website/.venv/bin/uvicorn website.backend.app:app --host 127.0.0.1 --port 8000
-```
-
-For the website preview, set `BACKEND_URL=http://127.0.0.1:8000` and the same `BACKEND_TOKEN` as the API, then restart `node website/site/dev.mjs`. `/health` checks process liveness; `/ready` returns 503 until the corpus and model settings load and a backend token is configured. Ten chat attempts per minute per backend process limit inference traffic. Use one worker for this process-wide budget; multi-instance deployments need a shared limit. No conversation history is stored server-side. The browser sends bounded recent context for the selected course with each request; refreshing or clearing that course’s chat resets its context.
-
-## Host the backend
+## Standalone backend / retained hosting compatibility
 
 The Docker build context is the repository root:
 
@@ -129,7 +119,7 @@ The course picker alone does not install course data on the server.
 
 ## Publish the website
 
-`site/.openai/hosting.json` stores the exact Sites identity. `node website/site/build.mjs` generates a self-contained Worker at `site/dist/server/index.js`. Package and publish using the Sites source workflow; browser libraries and math fonts are bundled locally; the deployed Worker has no Node.js runtime dependency. Publish only `website/site`, not this whole repository. New Sites are private by default; wider tester access must be configured with supported Sites controls.
+`site/.openai/hosting.json` stores the exact Sites identity. `npm --prefix website/site run build:sites` generates a self-contained Worker at `site/dist/server/index.js`. Package and publish using the Sites source workflow; browser libraries and math fonts are bundled locally; the deployed Worker has no Node.js runtime dependency. Publish only `website/site`, not this whole repository. New Sites are private by default; wider tester access must be configured with supported Sites controls.
 
 ## Verify
 
@@ -137,7 +127,7 @@ The course picker alone does not install course data on the server.
 website/.venv/bin/pip install pytest
 website/.venv/bin/python -m pytest website/backend/tests -q
 node --test website/site/tests/*.test.mjs
-node website/site/build.mjs
+npm --prefix website/site run build:sites
 node --check website/site/dist/server/index.js
 ```
 
@@ -151,24 +141,34 @@ Deploy from `website/`: `.python-version`, `pyproject.toml` and `vercel.json` co
 
 Keep `MODEL_API_KEY` and `BACKEND_TOKEN` as production **Secret** values in Vercel. Configure `MODEL_PROVIDER`, `MODEL_BASE_URL`, `MODEL_NAME` and `RETRIEVAL_MODE` there as well. The public gateway uses the existing token internally; no Cloudflare configuration is required. Do not put these secrets in browser files. Secret environment values cannot be downloaded through `vercel env pull`; it returns placeholders for them.
 
-## Automated tests and deployment
+## Automated checks and deployment
 
-[GitHub Actions](https://github.com/ronitjain04/backbone/actions/workflows/ci-deploy.yml) runs the frontend suite/build and Python backend/deployment suite on pushes and pull requests. Successful `main` runs deploy production, as do manual runs on `main` and the daily **09:17 UTC** schedule. GitHub may delay scheduled runs. Pull requests and other branches never deploy.
+PRs and pushes to `main` run quality/workflow/dependency checks, backend and real PostgreSQL integration tests, a populated old-schema upgrade, frontend/static/Sites compatibility tests, and real Chromium student/teacher/replay/mobile smoke tests. Browser fixtures use synthetic data outside the Vercel project root; no private corpus, model credential or production database is available to PR jobs. Failed browser traces/screenshots are retained for three days.
 
-Configure these repository Actions settings:
+Local checks:
 
-| Setting | Type | Purpose |
-| --- | --- | --- |
-| `VERCEL_ORG_ID` | Variable | Vercel account/team owning `backbone-api` |
-| `VERCEL_PROJECT_ID` | Variable | Existing combined website/API project ID |
-| `VERCEL_TOKEN` | Secret | Project-scoped deployment access |
-| `BACKEND_URL` | Variable | `https://backbone-api.vercel.app` |
+```sh
+website/.venv/bin/ruff check .
+npm --prefix website/site run lint
+website/.venv/bin/python -m pytest website/backend/tests scripts/tests -q
+npm --prefix website/site test
+npm --prefix website/site run build
+# With TEST_DATABASE_URL set to an isolated local PostgreSQL database:
+website/.venv/bin/python -m playwright install --only-shell chromium
+website/.venv/bin/python -m pytest tests/browser --browser chromium -q
+website/.venv/bin/pip-audit -r website/backend/requirements.txt
+npm --prefix website/site audit --omit=dev --audit-level=high
+```
 
-The workflow fails before deploying if any setting is absent. The pinned Vercel CLI uploads the checked-out API and tested frontend artifact together, waits for deployment completion, and assigns the production `backbone-study.vercel.app` alias. `BACKBONE_COMMIT` records the tested SHA in the function environment; `/health` must match that SHA and `/ready` must include both courses before the public website smoke tests run. Keep Vercel's independent Git auto-deployment disconnected so GitHub's test gate controls releases.
+Only successful **main push** runs can release. Manual verification does not deploy. Configure Actions variables `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` and the project-scoped `VERCEL_TOKEN` secret. `BACKEND_URL` is no longer a release setting. Keep Vercel's independent Git auto-deployment disconnected.
 
-Public smoke checks request real answers for both courses plus a contextual follow-up, requiring sources and conversation support. This uses three answers and one query rewrite per deployment and does not print private source excerpts. The inference budget is per function process, not a global limit across Vercel instances; provider quotas still constrain use. Model/provider outages fail verification even if deployment succeeded. Rerun from **Actions → Test and deploy Backbone → Run workflow → main** after fixing an outage. There is no automatic rollback.
+The release job downloads the tested static artifact and creates a production-configured candidate using `--skip-domain`. It verifies the tested revision, both course configurations, source-grounded deterministic checking, draft/completion persistence, duplicate submissions, replay and teacher authorization using a fresh disposable CI student. That student is deleted after the check. It then rechecks remote main and promotes the verified candidate. Failed or stale candidates never reach promotion. Authenticated `vercel curl` handles protected deployments without weakening protection or placing credentials in URLs.
 
-Production hosting and automated releases use Vercel only. The old Cloudflare Pages project is no longer required, and GitHub Actions does not need Cloudflare credentials. Use Vercel deployment rollback to restore an earlier combined release. The previous Render service is outside the active deployment workflow.
+Promotion is serialized. A final public-alias failure reports the previous deployment and code recovery command; no destructive database rollback is automatic. **An unpromoted candidate can still apply additive database migrations through application startup.** Staging is a code/domain boundary, not database isolation; migrations must remain compatible with the preceding app. CI tests populated upgrades, but this cannot prove every future migration safe.
+
+The separate [live monitor](../.github/workflows/monitor.yml) runs daily at 09:17 UTC or manually, probes both courses and a contextual follow-up, and never deploys. Provider/service/network failures use bounded retries; Retry-After beyond the wait budget is reported without an early retry. Invalid answer/source contracts fail verification distinctly. These optional real-provider probes are separate from deterministic PR/release gates and do not expose source excerpts in logs. GitHub may delay schedules.
+
+Weekly grouped Dependabot PRs cover Actions, production Python and npm dependencies. Updates are reviewed and tested, never auto-merged. Production dependency audits do not certify the separate historical application folders. The original Sites publication remains active: `npm run build:sites` and its gateway compatibility tests are retained. Public production releases use Vercel.
 
 ## Guided practice demo
 

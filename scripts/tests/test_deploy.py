@@ -49,7 +49,7 @@ def test_homepage_check_identifies_the_workflow(monkeypatch):
         assert request.get_header('User-agent') == 'Backbone-GitHub-Actions'
         return Homepage()
     monkeypatch.setattr(deploy, 'urlopen', open_homepage)
-    monkeypatch.setattr(deploy, 'wait_ready', lambda _: None)
+    monkeypatch.setattr(deploy, 'wait_ready', lambda *a,**kw: None)
     monkeypatch.setattr(deploy, 'request_json', lambda url,data: {'course':data['course'], 'supports_history':True, 'answer':'answer [1]', 'citations':[{}], 'context':[{}]})
     deploy.smoke('https://example.com')
 

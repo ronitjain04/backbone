@@ -3,9 +3,8 @@ Requires a private corpus path and an already authorized Vercel login.
 """
 from pathlib import Path
 import argparse,json,time,math,subprocess,tempfile
-import httpx
 from website.backend.retrieval import Retriever
-from website.backend.practice.bank import load_bank,fingerprint
+from website.backend.practice.bank import fingerprint
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--base-url',required=True)
 parser.add_argument('--corpus',required=True)

@@ -1,0 +1,65 @@
+{
+  "environment": "local ASGI + real PostgreSQL; fixture retriever, no model calls",
+  "students": 30,
+  "action_budget_used": 60,
+  "duplicate_http_deliveries": 120,
+  "reconnects": 30,
+  "event_counts": {
+    "check_requested": 50,
+    "hint_requested": 10,
+    "outcome_recorded": 40
+  },
+  "outcomes": {
+    "solved_independently": 30,
+    "corrected_with_help": 10
+  },
+  "elapsed_seconds": 1.5,
+  "http_statuses": {
+    "200": 388
+  },
+  "latency_ms": {
+    "check": {
+      "n": 150,
+      "p50": 46.45,
+      "p95": 92.24,
+      "max": 115.03
+    },
+    "classroom": {
+      "n": 18,
+      "p50": 23.99,
+      "p95": 32.71,
+      "max": 32.71
+    },
+    "hint": {
+      "n": 30,
+      "p50": 41.23,
+      "p95": 88.53,
+      "max": 92.75
+    },
+    "presence": {
+      "n": 90,
+      "p50": 20.7,
+      "p95": 31.37,
+      "max": 39.56
+    },
+    "select": {
+      "n": 40,
+      "p50": 23.46,
+      "p95": 36.05,
+      "max": 39.55
+    },
+    "start": {
+      "n": 30,
+      "p50": 41.41,
+      "p95": 77.42,
+      "max": 88.6
+    },
+    "state": {
+      "n": 30,
+      "p50": 27.65,
+      "p95": 40.43,
+      "max": 47.55
+    }
+  },
+  "at": "2026-11-15T00:34:37.273714+00:00"
+}
