@@ -8,8 +8,10 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import time
 from urllib.error import HTTPError
-from urllib.request import build_opener, HTTPCookieProcessor, Request
+from urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
+from urllib.parse import urlencode, quote
 from uuid import uuid4
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -64,7 +66,7 @@ def verify_target(transport,commit,*,practice=False):
         raise ReleaseError('Deployment is not serving the tested commit')
     if not {'cs2110','cs2200'}.issubset(checked(transport,'/ready').get('courses',[])):
         raise ReleaseError('Deployment is missing a configured course')
-    if not practice:return
+    if not practice:return health
     started=checked(transport,'/api/practice/start',{'name':'CI release verification'})
     if not started.get('session_id'):raise ReleaseError('Could not create the disposable practice session')
     try:
@@ -84,6 +86,7 @@ def verify_target(transport,commit,*,practice=False):
     finally:
         if checked(transport,'/api/practice/delete',{}).get('deleted') is not True:
             raise ReleaseError('Disposable verification session cleanup failed')
+    return health
 
 
 def release(commit,site_url,ops):
@@ -102,9 +105,29 @@ def release(commit,site_url,ops):
     return {'commit':commit,'candidate':candidate,'previous':previous,'promoted':True}
 
 
+def vercel_args(*arguments):
+    # VERCEL_ORG_ID and VERCEL_PROJECT_ID already bind CI to its project.
+    # Explicit --scope triggers team discovery unavailable to project credentials.
+    return ['vercel',*arguments]
+
+
 def run_cli(args,*,cwd=ROOT):
+    operations={('vercel','inspect'):'vercel inspect',('vercel','deploy'):'vercel deploy',
+                ('vercel','curl'):'vercel curl',('vercel','promote'):'vercel promote',('git','ls-remote'):'git ls-remote'}
+    operation=operations.get(tuple(args[:2]),'release command')
     try:return subprocess.run(args,cwd=cwd,check=True,capture_output=True,text=True,timeout=600).stdout
-    except (OSError,subprocess.SubprocessError):raise ReleaseError('Release command failed; inspect the protected deployment logs') from None
+    except subprocess.CalledProcessError as error:
+        # Classify known failure categories without logging raw stderr, arguments,
+        # tokens, response bodies or project identifiers.
+        diagnostic=((error.stderr or '')+' '+(error.stdout or '')).lower()
+        if any(x in diagnostic for x in ('invalid token','token expired','token is invalid','authentication')):reason='authentication failure'
+        elif any(x in diagnostic for x in ('not authorized','forbidden','not permitted','permission')):reason='authorization failure'
+        elif any(x in diagnostic for x in ('not found','could not find','cannot find')):reason='resource or project not found'
+        elif 'option' in diagnostic and ('unknown' in diagnostic or 'unexpected' in diagnostic):reason='unsupported CLI option'
+        else:reason='CLI rejected the operation'
+        raise ReleaseError(operation+' failed ('+reason+'); inspect protected deployment configuration') from None
+    except (OSError,subprocess.SubprocessError):
+        raise ReleaseError(operation+' could not complete; inspect protected deployment configuration') from None
 
 
 def parse_reply(raw,marker='\nBACKBONE_HTTP:'):
@@ -119,19 +142,23 @@ def parse_reply(raw,marker='\nBACKBONE_HTTP:'):
 class CandidateTransport:
     def __init__(self,base,jar):self.base=validated_url(base);self.jar=jar
     def request(self,path,data=None):
-        args=['vercel','curl',path,'--deployment',self.base,'--','--silent','--show-error','--max-time','80',
+        args=vercel_args('curl',path,'--deployment',self.base)+['--','--silent','--show-error','--max-time','80',
               '--write-out','\nBACKBONE_HTTP:%{http_code}','--cookie',self.jar,'--cookie-jar',self.jar,'--header','Origin: '+self.base]
         if data is not None:args+=['--request','POST','--header','Content-Type: application/json','--data',json.dumps(data)]
         return parse_reply(run_cli(args,cwd=ROOT/'website'))
 
 
 class PublicTransport:
-    def __init__(self,base):self.base=validated_url(base);self.opener=build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    def __init__(self,base,*,deadline=None):
+        self.base=validated_url(base);self.deadline=deadline
+        self.opener=build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
     def request(self,path,data=None):
         payload=None if data is None else json.dumps(data).encode()
         req=Request(self.base+path,data=payload,headers={'Content-Type':'application/json','Origin':self.base,'User-Agent':'Backbone-GitHub-Actions'})
+        timeout=80 if self.deadline is None else min(80,self.deadline-time.monotonic())
+        if timeout<=0:raise ReleaseError('Public verification deadline exceeded')
         try:
-            with self.opener.open(req,timeout=80) as response:
+            with self.opener.open(req,timeout=timeout) as response:
                 raw=response.read().decode('utf-8')
                 return parse_reply(raw+'\nBACKBONE_HTTP:'+str(response.status))
         except HTTPError as error:
@@ -142,21 +169,33 @@ class PublicTransport:
 
 
 class VercelOps:
+    def __init__(self):self.verified_candidates={}
     def previous(self,site):
-        # A broken application must not prevent shipping its replacement.
-        raw=run_cli(['vercel','inspect',validated_url(site),'--json','--cwd','website'])
+        # Read the configured project's live target, never its newest staged build.
+        # Application health and hostname-based CLI discovery are not prerequisites.
+        validated_url(site)
+        project=os.environ.get('VERCEL_PROJECT_ID','')
+        team=os.environ.get('VERCEL_ORG_ID','')
+        token=os.environ.get('VERCEL_TOKEN','')
+        if not project or not team or not token:
+            raise ReleaseError('Missing configured Vercel project, team, or credential')
+        url='https://api.vercel.com/v9/projects/'+quote(project,safe='')+'?'+urlencode({'teamId':team})
         try:
-            identifier=json.loads(raw).get('id','')
-            if not isinstance(identifier,str) or not re.fullmatch('dpl_[A-Za-z0-9]+',identifier):
+            with urlopen(Request(url,headers={'Authorization':'Bearer '+token}),timeout=30) as response:
+                data=json.load(response)
+            identifier=data.get('targets',{}).get('production',{}).get('id','')
+            if data.get('id')!=project or not isinstance(identifier,str) or not re.fullmatch('dpl_[A-Za-z0-9]+',identifier):
                 raise ReleaseError('Cannot identify the previous deployment for code recovery')
             return identifier
-        except (ValueError,AttributeError,TypeError):
-            raise ReleaseError('Deployment metadata was invalid; no promotion attempted') from None
+        except HTTPError as error:
+            raise ReleaseError('Vercel project metadata request failed (HTTP '+str(error.code)+'); no promotion attempted') from None
+        except (OSError,ValueError,AttributeError,TypeError):
+            raise ReleaseError('Vercel project metadata unavailable or invalid; no promotion attempted') from None
     def current_main(self):
         output=run_cli(['git','ls-remote','origin','refs/heads/main'])
         return output.split()[0] if output.split() else ''
     def deploy(self,commit):
-        url=candidate_url(run_cli(['vercel','deploy','--prod','--skip-domain','--yes','--cwd','website','--env','BACKBONE_COMMIT='+commit]))
+        url=candidate_url(run_cli(vercel_args('deploy','--prod','--skip-domain','--yes','--cwd','website','--env','BACKBONE_COMMIT='+commit)))
         write_summary('Candidate created, not promoted: '+url+' · tested commit `'+commit+'`.')
         return url
     @contextmanager
@@ -167,9 +206,40 @@ class VercelOps:
     def verify_candidate(self,url,commit):
         with self.candidate(url) as transport:
             verify_assets(transport)
-            verify_target(transport,commit,practice=True)
-    def promote(self,url):run_cli(['vercel','promote',url,'--yes','--timeout','3m','--cwd','website'])
-    def verify_alias(self,url,commit):verify_target(PublicTransport(url),commit)
+            health=verify_target(transport,commit,practice=True)
+        identifier=health.get('instance','')
+        if not isinstance(identifier,str) or not re.fullmatch('dpl_[A-Za-z0-9]+',identifier):
+            raise ReleaseError('Verified candidate has no valid deployment ID')
+        self.verified_candidates[url]=identifier
+    def promote(self,url):
+        identifier=self.verified_candidates.get(url)
+        if not identifier:raise ReleaseError('Cannot promote a candidate without completed verification')
+        project=os.environ.get('VERCEL_PROJECT_ID','')
+        team=os.environ.get('VERCEL_ORG_ID','')
+        token=os.environ.get('VERCEL_TOKEN','')
+        if not project or not team or not token:
+            raise ReleaseError('Missing configured Vercel project, team, or credential')
+        endpoint='https://api.vercel.com/v10/projects/'+quote(project,safe='')+'/promote/'+identifier+'?'+urlencode({'teamId':team})
+        request=Request(endpoint,data=b'{}',headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'})
+        try:
+            with urlopen(request,timeout=30) as response:
+                if not 200<=response.status<300:raise ReleaseError('Vercel project promotion was not accepted')
+        except HTTPError as error:
+            raise ReleaseError('Vercel project promotion failed (HTTP '+str(error.code)+'); inspect deployment permissions') from None
+        except OSError:
+            raise ReleaseError('Vercel project promotion request failed; inspect project state before retrying') from None
+    def verify_alias(self,url,commit):
+        # The project API can accept promotion asynchronously (HTTP 202).
+        deadline=time.monotonic()+180
+        for attempt in range(20):
+            try:
+                verify_target(PublicTransport(url,deadline=deadline),commit)
+                return
+            except ReleaseError:
+                remaining=deadline-time.monotonic()
+                if attempt==19 or remaining<=0:raise
+                time.sleep(min(3,remaining))
+
 
 
 def write_summary(text):
