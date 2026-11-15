@@ -4,9 +4,14 @@ An AI tutoring project that retrieves course material to help answer student que
 
 ## Live demo
 
-**[Try Backbone](https://backbone-study.vercel.app)** — ask a computer-systems question and explore the supporting sources. The public demo uses Groq and six original study notes; it does not include official course slides or textbooks. Free hosting and model limits apply.
+**[Try Backbone](https://backbone-study.vercel.app)** — ask a computer-systems question and explore the supporting sources. The demo uses Groq, privately configured CS 2110 course retrieval, and original CS 2200 study notes. Course files are excluded from this repository. Free hosting and model limits apply.
 
 See the [website and backend guide](website/README.md) for setup, tests, and deployment.
+
+The guided practice workspace adds 18 original exercises, saved PostgreSQL sessions,
+source-grounded help, an interactive memory explanation, independent follow-up checks,
+and a protected teacher dashboard with replay. See the
+[classroom evaluation](docs/verification/2026-11-14-classroom-learning.md) for measured results and limits.
 
 ## Projects
 

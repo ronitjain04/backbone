@@ -74,13 +74,23 @@ async def assess(exercise, answer, work, chunks, model, attempts=None):
 def first_arithmetic_error(work,width=None):
     """First demonstrably false equality; unparseable prose is not evidence."""
     from .checking import parse_number, Unclear
+    from fractions import Fraction
+    import re
+    factors={'bits':Fraction(1,8),'bit':Fraction(1,8),'bytes':Fraction(1),'byte':Fraction(1),'B':Fraction(1),'KiB':Fraction(1024)}
+    def quantity(text):
+        try:return parse_number(text),False
+        except Unclear:pass
+        match=re.fullmatch(r'(.+?)\s+(bits|bit|bytes|byte|B|KiB)\s*',text.strip())
+        if not match:raise Unclear('Unknown quantity')
+        return parse_number(match[1])*factors[match[2]],True
     for line in work.splitlines():
         if line.count('=')!=1 or len(line)>300:continue
         left,right=line.split('=')
         try:
-            a,b=parse_number(left),parse_number(right)
-            equivalent=a==b or (width and a.denominator==b.denominator==1 and (a-b)%(2**width)==0)
+            (a,a_unit),(b,b_unit)=quantity(left),quantity(right)
+            if a_unit!=b_unit:continue
+            equivalent=a==b or (width and not a_unit and a.denominator==b.denominator==1 and (a-b)%(2**width)==0)
             if not equivalent:
-                return {'label':'An arithmetic step does not hold','criterion':'concept','evidence':line,'source_ids':[], 'method':'deterministic equality check'}
+                return {'label':'Bits and bytes represent different quantities' if a_unit else 'An arithmetic step does not hold','criterion':'concept','evidence':line,'source_ids':[], 'method':'deterministic unit equality check' if a_unit else 'deterministic equality check'}
         except Unclear:continue
     return None

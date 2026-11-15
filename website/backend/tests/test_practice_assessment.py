@@ -59,3 +59,14 @@ def test_valid_fixed_width_wrap_is_not_an_arithmetic_error():
     assert first_arithmetic_error('100 + 40 = -116',width=8) is None
     assert first_arithmetic_error('65535 + 1 = 0',width=16) is None
     assert first_arithmetic_error('100 + 40 = -115',width=8) is not None
+
+
+def test_explicit_memory_units_are_checked_without_guessing_missing_units():
+    from website.backend.practice.assessment import first_arithmetic_error
+    error=first_arithmetic_error('2048 bits = 2048 bytes')
+    assert error['evidence']=='2048 bits = 2048 bytes'
+    assert error['method']=='deterministic unit equality check'
+    assert first_arithmetic_error('2 KiB = 2048 bytes') is None
+    assert first_arithmetic_error('16384 bits = 2048 bytes') is None
+    assert first_arithmetic_error('2048 = 2048 bytes') is None
+    assert first_arithmetic_error('2 KB = 2048 bytes') is None

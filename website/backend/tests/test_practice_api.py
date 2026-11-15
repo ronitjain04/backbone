@@ -50,7 +50,8 @@ def test_checks_hints_and_replay_persist_across_requests(practice):
     assert client.get('/api/practice/state').json()['progress']['num-01']['completed'] is True
     events=client.get('/api/practice/events').json()['events']
     assert [e['kind'] for e in events].count('check_requested')==1
-    assert events[-1]['kind']=='check_finished'
+    assert events[-2]['kind']=='check_finished'
+    assert events[-1]['payload']['outcome']=='solved_independently'
     # No private course corpus is configured in this API fixture: hints must fail honestly.
     hinted=client.post('/api/practice/hint',json={**action,'request_key':'hint-unique-001'},headers=origin)
     assert hinted.json()['status']=='unavailable'
@@ -91,3 +92,32 @@ def test_startup_can_bootstrap_practice_without_exposing_migrations(practice_dat
         assert result.status_code==200
         assert client.get('/api/practice/migrate').status_code==404
         client.post('/api/practice/delete',headers={'Origin':'http://testserver'})
+
+
+def test_presence_visual_and_teacher_detail_authorization(practice,monkeypatch):
+    from uuid import uuid4
+    client,_=practice;origin={'Origin':'http://testserver'}
+    s=client.post('/api/practice/start',json={},headers=origin).json()
+    assert client.post('/api/practice/presence',json={'tab_id':str(uuid4()),'sequence':1},headers=origin).status_code==200
+    assert client.get(f"/api/practice/classroom/{s['session_id']}/detail").status_code==401
+    monkeypatch.setenv('PRACTICE_OWNER_TOKEN','test-teacher-secret')
+    owner={'X-Practice-Owner':'test-teacher-secret'}
+    assert client.get('/api/practice/classroom',headers=owner).json()['sessions'][0]['presence']=='active'
+    assert client.get(f"/api/practice/classroom/{s['session_id']}/detail",headers=owner).status_code==200
+    visual={'exercise_id':'mem-03','request_key':'visual-001','stage':1,'address_bits':2,'bits_per_location':4}
+    assert client.post('/api/practice/visual',json=visual,headers=origin).json()['status']=='unavailable'
+    assert client.get('/api/practice/state').json()['visuals']=={}
+    assert client.post('/api/practice/visual',json={**visual,'stage':4},headers=origin).status_code==422
+    assert client.post('/api/practice/select',json={'exercise_id':'mem-03-follow'},headers=origin).status_code==409
+
+
+def test_visual_retry_recovers_saved_sources_even_if_retriever_disappears(practice,monkeypatch):
+    from website.backend.practice import routes
+    client,_=practice;origin={'Origin':'http://testserver'}
+    client.post('/api/practice/start',json={},headers=origin)
+    monkeypatch.setattr(routes,'grounded_chunks',lambda *a:[{'source':'Fixture','details':'1','text':'Addressability describes one location.'}])
+    body={'exercise_id':'mem-03','request_key':'visual-retry-0','stage':1,'address_bits':2,'bits_per_location':4}
+    first=client.post('/api/practice/visual',json=body,headers=origin).json();assert first['status']=='visual'
+    monkeypatch.setattr(routes,'grounded_chunks',lambda *a:[])
+    assert client.post('/api/practice/visual',json=body,headers=origin).json()==first
+    assert client.post('/api/practice/visual',json={**body,'stage':2},headers=origin).status_code==409

@@ -273,3 +273,21 @@ Each database test creates and removes its own schema. GitHub CI supplies a
 PostgreSQL 17 service, so these tests run there rather than being silently skipped.
 A local run without `TEST_DATABASE_URL` skips database cases and is insufficient
 to verify persistence. Keep production database secrets out of test commands.
+
+## Interactive classroom demo
+
+`/practice.html` includes a source-grounded memory lab, separate helped/independent
+completion outcomes, and fresh authored follow-ups. `/teacher.html` uses the existing
+`PRACTICE_OWNER_TOKEN` for a five-second classroom view with evidence inspection and
+session replay. Keep this credential server-side and enter it only into the protected
+teacher form; it is not placed in URLs or browser storage.
+
+Presence is inferred from per-tab signals (active under 45 seconds, stale through
+120 seconds, then disconnected/closed). Background tabs can become stale. Migrations
+are additive and recorded by checksum; run `migrate_practice` before serving the new
+API. Existing completed sessions keep a historical-unclassified outcome.
+
+See the [classroom verification report](../docs/verification/2026-11-14-classroom-learning.md)
+for the 30-student reconnect/idempotency test, measured latency, hosted provider quota
+failures, citation audit and remaining limits. This evaluation is not evidence of
+measured educational impact or 30 simultaneous model assessments.

@@ -9,6 +9,8 @@ from psycopg.rows import dict_row
 from psycopg.conninfo import conninfo_to_dict
 from psycopg.types.json import Jsonb
 from .bank import BANK_VERSION, public_exercise
+from .learning import conceptual_help, resolve_outcome
+from .classroom import ClassroomStore
 
 CLASSROOM = UUID('681f864f-13a5-439b-a1db-5cac9b9ecb73')
 class Unauthorized(Exception): pass
@@ -16,7 +18,7 @@ class Conflict(Exception): pass
 class RateLimited(Exception): pass
 
 
-class Store:
+class Store(ClassroomStore):
     def __init__(self, dsn):
         self.dsn = dsn
 
@@ -27,7 +29,15 @@ class Store:
     def migrate(self):
         with self.connect() as db:
             db.execute('SELECT pg_advisory_xact_lock(211014)')
-            db.execute(Path(__file__).with_name('migrations').joinpath('001_practice.sql').read_text())
+            db.execute('CREATE TABLE IF NOT EXISTS practice_migrations(name text PRIMARY KEY, checksum text NOT NULL)')
+            for path in sorted(Path(__file__).with_name('migrations').glob('*.sql')):
+                source=path.read_text(); checksum=hashlib.sha256(source.encode()).hexdigest()
+                applied=db.execute('SELECT checksum FROM practice_migrations WHERE name=%s',(path.name,)).fetchone()
+                if applied:
+                    if applied['checksum']!=checksum:raise RuntimeError('Applied migration changed: '+path.name)
+                    continue
+                db.execute(source)
+                db.execute('INSERT INTO practice_migrations VALUES (%s,%s)',(path.name,checksum))
 
     def seed(self, bank):
         with self.connect() as db:
@@ -64,6 +74,17 @@ class Store:
             self.event(db,{'id':session},'session_started')
         return token
 
+    def expire_actions(self,db,s):
+        """Caller holds session lock. A worker cannot deliver a result after recovery expires it."""
+        expired=db.execute("SELECT * FROM practice_submissions WHERE session_id=%s AND result IS NULL AND created_at<clock_timestamp()-interval '90 seconds' ORDER BY created_at,id",(s['id'],)).fetchall()
+        for action in expired:
+            failed={'status':'unavailable','message':'The previous request was interrupted. Your work is saved; request another check or hint.','sources':[],'misconception':None}
+            db.execute('UPDATE practice_submissions SET result=%s WHERE id=%s',(Jsonb(failed),action['id']))
+            if action['kind']=='check':db.execute('INSERT INTO practice_feedback VALUES (%s,%s,DEFAULT)',(action['id'],Jsonb(failed)))
+            self.event(db,s,action['kind']+'_finished',action['exercise_id'],{'action_id':str(action['id']),**failed})
+            resolved=resolve_outcome(db,s['id'],action['exercise_id'])
+            if resolved:self.event(db,s,'outcome_recorded',action['exercise_id'],{'outcome':resolved})
+
     def exercise(self, token, exercise_id):
         with self.connect() as db:
             s=self.session(db,token)
@@ -73,16 +94,19 @@ class Store:
 
     def snapshot(self, token):
         with self.connect() as db:
-            s=self.session(db,token)
+            s=self.session(db,token,True);self.expire_actions(db,s)
             exercises=db.execute('SELECT definition FROM practice_exercises WHERE version=%s ORDER BY id',(s['bank_version'],)).fetchall()
-            progress=db.execute('SELECT exercise_id,answer,work,revision,completed,hint_level FROM practice_progress WHERE session_id=%s',(s['id'],)).fetchall()
+            progress=db.execute('SELECT exercise_id,answer,work,revision,completed,hint_level,outcome FROM practice_progress WHERE session_id=%s',(s['id'],)).fetchall()
             actions=db.execute('SELECT id,exercise_id,kind,result,created_at FROM practice_submissions WHERE session_id=%s ORDER BY created_at,id',(s['id'],)).fetchall()
-            return {'session_id':str(s['id']),'selected_exercise':s['selected_exercise'],'classroom':'CS 2110 · Guided practice','exercises':[public_exercise(r['definition']) for r in exercises],
+            visuals=db.execute('SELECT exercise_id,stage,address_bits,bits_per_location FROM practice_visuals WHERE session_id=%s',(s['id'],)).fetchall()
+            return {'visuals':{v['exercise_id']:{k:x for k,x in v.items() if k!='exercise_id'} for v in visuals},'session_id':str(s['id']),'selected_exercise':s['selected_exercise'],'classroom':'CS 2110 · Guided practice','exercises':[public_exercise(r['definition']) for r in exercises],
                     'progress':{r['exercise_id']:{k:v for k,v in r.items() if k!='exercise_id'} for r in progress},
                     'actions':[dict(r,id=str(r['id']),created_at=r['created_at'].isoformat()) for r in actions]}
 
     def ensure_progress(self, db, s, exercise_id):
         if not db.execute('SELECT 1 FROM practice_exercises WHERE version=%s AND id=%s',(s['bank_version'],exercise_id)).fetchone(): raise KeyError('Exercise not found')
+        if exercise_id.endswith('-follow') and not db.execute('SELECT 1 FROM practice_progress WHERE session_id=%s AND exercise_id=%s AND completed',(s['id'],exercise_id.removesuffix('-follow'))).fetchone():
+            raise Conflict('Complete the original exercise before opening its fresh follow-up.')
         db.execute('INSERT INTO practice_progress(session_id,exercise_id) VALUES (%s,%s) ON CONFLICT DO NOTHING',(s['id'],exercise_id))
 
     def select_exercise(self, token, exercise_id):
@@ -104,17 +128,11 @@ class Store:
 
     def begin_action(self, token, exercise_id, kind, request_key, content):
         with self.connect() as db:
-            s=self.session(db,token,True); self.ensure_progress(db,s,exercise_id)
+            s=self.session(db,token,True); self.ensure_progress(db,s,exercise_id);self.expire_actions(db,s)
             existing=db.execute('SELECT * FROM practice_submissions WHERE session_id=%s AND request_key=%s',(s['id'],request_key)).fetchone()
             if existing:
                 if existing['exercise_id']!=exercise_id or existing['kind']!=kind or existing['input']!=content:
                     raise Conflict('This request ID was already used with different work.')
-                if existing['result'] is None and datetime.now(timezone.utc)-existing['created_at']>timedelta(seconds=90):
-                    failed={'status':'unavailable','message':'The previous request was interrupted. Your work is saved; request another check or hint.','sources':[],'misconception':None}
-                    db.execute('UPDATE practice_submissions SET result=%s WHERE id=%s',(Jsonb(failed),existing['id']))
-                    if kind=='check':db.execute('INSERT INTO practice_feedback VALUES (%s,%s,DEFAULT)',(existing['id'],Jsonb(failed)))
-                    self.event(db,s,kind+'_finished',exercise_id,{'action_id':str(existing['id']),**failed})
-                    existing['result']=failed
                 return {'id':str(existing['id']),'result':existing['result'],'new':False,'hint_level':existing['hint_level']}
             if db.execute("SELECT count(*) AS n FROM practice_submissions WHERE session_id=%s AND created_at>now()-interval '1 minute'",(s['id'],)).fetchone()['n']>=12:
                 raise RateLimited('You have made several requests. Please wait a minute before another check or hint.')
@@ -132,19 +150,29 @@ class Store:
 
     def finish_action(self, token, action_id, result):
         with self.connect() as db:
-            s=self.session(db,token,True)
+            s=self.session(db,token,True);self.expire_actions(db,s)
             action=db.execute('SELECT * FROM practice_submissions WHERE session_id=%s AND id=%s',(s['id'],UUID(str(action_id)))).fetchone()
             if not action: raise Unauthorized('Action not found')
             if action['result'] is not None: return action['result']
+            if result['status']=='hint' or conceptual_help(result):
+                # Use reservation time for overlapping help/checks; resolve only after the help result is known.
+                db.execute('INSERT INTO practice_assistance(session_id,exercise_id,source_key,kind,at) VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING',
+                           (s['id'],action['exercise_id'],str(action['id']),action['kind'],action['created_at']))
             db.execute('UPDATE practice_submissions SET result=%s WHERE id=%s',(Jsonb(result),action['id']))
             if action['kind']=='check':
                 db.execute('INSERT INTO practice_feedback(submission_id,content) VALUES (%s,%s)',(action['id'],Jsonb(result)))
                 if result['status']=='correct':
-                    db.execute('UPDATE practice_progress SET completed=true WHERE session_id=%s AND exercise_id=%s',(s['id'],action['exercise_id']))
+                    db.execute('UPDATE practice_progress SET completed=true,completed_at=COALESCE(completed_at,clock_timestamp()) WHERE session_id=%s AND exercise_id=%s',(s['id'],action['exercise_id']))
             elif result['status']=='hint':
                 db.execute('INSERT INTO practice_hints VALUES (%s,%s,%s)',(action['id'],action['hint_level'],Jsonb(result)))
                 db.execute('UPDATE practice_progress SET hint_level=GREATEST(hint_level,%s) WHERE session_id=%s AND exercise_id=%s',(action['hint_level'],s['id'],action['exercise_id']))
+            resolved=resolve_outcome(db,s['id'],action['exercise_id'])
+            p=db.execute('SELECT outcome FROM practice_progress WHERE session_id=%s AND exercise_id=%s',(s['id'],action['exercise_id'])).fetchone()
+            if p['outcome']:
+                result=dict(result,outcome=p['outcome'])
+                db.execute('UPDATE practice_submissions SET result=%s WHERE id=%s',(Jsonb(result),action['id']))
             self.event(db,s,action['kind']+'_finished',action['exercise_id'],{'action_id':str(action['id']),**result})
+            if resolved:self.event(db,s,'outcome_recorded',action['exercise_id'],{'outcome':resolved})
         return result
 
     def attempts(self, token, exercise_id):
@@ -156,11 +184,6 @@ class Store:
         with self.connect() as db:
             s=self.session(db,token)
             return [dict(r,at=r['at'].isoformat()) for r in db.execute('SELECT seq,at,kind,exercise_id,payload FROM practice_events WHERE session_id=%s ORDER BY seq',(s['id'],))]
-
-    def classroom(self):
-        with self.connect() as db:
-            rows=db.execute('SELECT s.id,st.display_name,s.created_at,count(p.exercise_id) FILTER (WHERE p.completed) AS completed FROM practice_sessions s JOIN practice_students st ON st.id=s.student_id LEFT JOIN practice_progress p ON p.session_id=s.id GROUP BY s.id,st.display_name ORDER BY s.created_at DESC LIMIT 100').fetchall()
-            return [dict(r,id=str(r['id']),created_at=r['created_at'].isoformat()) for r in rows]
 
     def classroom_events(self, session_id):
         with self.connect() as db:
