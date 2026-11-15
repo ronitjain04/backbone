@@ -3,7 +3,7 @@ import {outcomeLabel} from './learning.mjs';
 import {mountReplay} from './replay.mjs';
 import {mountMemoryVisual} from './memory-visual.mjs';
 const $=id=>document.getElementById(id);
-let state=null,selected=null,timer=null,saving=Promise.resolve(),busy=false,events=[],ownerKey='';
+let state=null,selected=null,timer=null,saving=Promise.resolve(),busy=false,events=[];
 const pendingActions=new Map();
 let visual=null,replayPlayer=null,presenceTimer=null,presenceSequence=0;
 const tabId=crypto.randomUUID();
@@ -112,10 +112,4 @@ $('practice-delete').addEventListener('click',async()=>{
 function showReplay(items){events=items;replayPlayer?.destroy();$('practice-replay-panel').hidden=false;replayPlayer=mountReplay($('replay-content'),events);const panel=$('practice-replay-panel');panel.tabIndex=-1;panel.focus({preventScroll:true});panel.scrollIntoView?.({behavior:'smooth',block:'start'})}
 $('practice-replay').addEventListener('click',async()=>{try{await flush();showReplay((await api('events')).events)}catch(err){error(err)}});
 $('replay-close').addEventListener('click',()=>{replayPlayer?.destroy();$('practice-replay-panel').hidden=true});
-$('practice-owner-load').addEventListener('click',async()=>{
- ownerKey=$('practice-owner-key').value;$('practice-owner-key').value='';
- try{const data=await api('classroom',undefined,{'X-Practice-Owner':ownerKey});const target=$('practice-classroom');target.replaceChildren();
-  for(const s of data.sessions){const b=node('button',`${s.display_name} · ${s.completed} completed · ${new Date(s.created_at).toLocaleString()}`,'clear-button');b.addEventListener('click',async()=>{try{showReplay((await api(`classroom/${s.id}/events`,undefined,{'X-Practice-Owner':ownerKey})).events)}catch(err){error(err)}});target.append(b)}
- }catch(err){ownerKey='';error(err)}
-});
 api('state').then(show).catch(err=>{if(err.status===401)$('practice-entry').hidden=false;else error(err)});

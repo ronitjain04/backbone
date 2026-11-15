@@ -17,7 +17,7 @@ export function reduceEvents(events,index){
   if(!e.exercise_id)continue;state.selected=e.exercise_id;
   const p=e.payload??{},x=state.exercises[e.exercise_id]??={answer:'',work:'',results:[],hints:[],outcome:null,visual:null};
   if('answer' in p){x.answer=p.answer;x.work=p.work??''}
-  if(e.kind==='check_finished')x.results.push(p);
+  if(e.kind==='check_finished'){x.results.push(p);if(p.status==='correct'&&!x.outcome)x.outcome='historical_unclassified'}
   if(e.kind==='hint_finished'&&p.status==='hint')x.hints.push(p);
   if(e.kind.startsWith('visual_'))x.visual=p;
   if(p.outcome)x.outcome=p.outcome;

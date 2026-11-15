@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 from psycopg.types.json import Jsonb
 from .visual import SUPPORTED
+from .errors import Conflict, RateLimited
 
 CONCEPTS={'mem-01':'address-count','mem-02':'address-count','mem-03':'capacity','mem-04':'capacity-units','mem-05':'capacity','mem-06':'addressability','num-01':'place-value','num-02':'signed-decoding','num-03':'negation','num-04':'signed-range','num-05':'overflow','num-06':'bitwise-mask','lc3-01':'register-arithmetic','lc3-02':'register-not','lc3-03':'condition-codes','lc3-04':'pc-relative','lc3-05':'register-program','lc3-06':'load-address'}
 
@@ -21,7 +22,6 @@ class ClassroomStore:
             # Bound abandoned tabs without growing indefinitely; old signals already mean disconnected.
             db.execute("DELETE FROM practice_presence WHERE session_id=%s AND seen_at<now()-interval '1 day'",(s['id'],))
             if not old and db.execute('SELECT count(*) AS n FROM practice_presence WHERE session_id=%s',(s['id'],)).fetchone()['n']>=20:
-                from .store import RateLimited
                 raise RateLimited('Too many active browser tabs for this session.')
             db.execute('INSERT INTO practice_presence(session_id,tab_id,sequence,connected) VALUES (%s,%s,%s,%s) ON CONFLICT(session_id,tab_id) DO UPDATE SET sequence=EXCLUDED.sequence,connected=EXCLUDED.connected,seen_at=clock_timestamp()', (s['id'],UUID(tab_id),sequence,connected))
             if not old or old['connected']!=connected or (connected and (datetime.now(timezone.utc)-old['seen_at']).total_seconds()>45):
@@ -29,7 +29,6 @@ class ClassroomStore:
         return {'accepted':True}
 
     def visual_retry(self,token,exercise_id,key,content):
-        from .store import Conflict
         with self.connect() as db:
             s=self.session(db,token)
             existing=db.execute('SELECT input,result FROM practice_interactions WHERE session_id=%s AND request_key=%s',(s['id'],key)).fetchone()
@@ -38,7 +37,6 @@ class ClassroomStore:
             return existing['result']
 
     def visual(self,token,exercise_id,key,content,result):
-        from .store import Conflict
         if exercise_id not in SUPPORTED:raise KeyError('No visual')
         with self.connect() as db:
             s=self.session(db,token,True);self.ensure_progress(db,s,exercise_id)
@@ -58,20 +56,41 @@ class ClassroomStore:
 
     def classroom(self):
         with self.connect() as db:
-            rows=db.execute('''SELECT s.*,st.display_name,
-              (SELECT max(at) FROM practice_events e WHERE e.session_id=s.id AND e.kind!='presence_changed') AS last_activity,
-              (SELECT count(*) FROM practice_progress p WHERE p.session_id=s.id AND p.completed) AS completed,
-              (SELECT max(seen_at) FROM practice_presence p WHERE p.session_id=s.id AND p.connected) AS last_signal,
-              (SELECT max(seen_at) FROM practice_presence p WHERE p.session_id=s.id) AS any_signal
-              FROM practice_sessions s JOIN practice_students st ON st.id=s.student_id ORDER BY s.created_at DESC LIMIT 100''').fetchall()
+            # Recover only expired actions for the displayed classroom, acquiring locks
+            # in UUID order so concurrent teacher reads cannot invert session locks.
+            expired=db.execute("""SELECT DISTINCT session_id FROM practice_submissions
+                WHERE result IS NULL AND created_at<clock_timestamp()-interval '90 seconds'
+                AND session_id IN (SELECT id FROM practice_sessions ORDER BY created_at DESC LIMIT 100)
+                ORDER BY session_id""").fetchall()
+            for item in expired:
+                session=db.execute('SELECT id FROM practice_sessions WHERE id=%s FOR UPDATE',(item['session_id'],)).fetchone()
+                self.expire_actions(db,session)
+            rows=db.execute("""WITH students AS (
+                SELECT s.id,s.bank_version,s.selected_exercise,s.created_at,st.display_name
+                FROM practice_sessions s JOIN practice_students st ON st.id=s.student_id
+                ORDER BY s.created_at DESC LIMIT 100
+            ) SELECT s.*,x.definition,
+                (SELECT max(at) FROM practice_events e WHERE e.session_id=s.id AND e.kind!='presence_changed') AS last_activity,
+                (SELECT max(seen_at) FROM practice_presence p WHERE p.session_id=s.id AND p.connected) AS last_signal,
+                (SELECT max(seen_at) FROM practice_presence p WHERE p.session_id=s.id) AS any_signal,
+                COALESCE(p.completed,0) AS completed, COALESCE(p.progress,'[]'::jsonb) AS progress,
+                a.id AS action_id,a.input AS latest_input,a.result AS latest_result,a.created_at AS latest_at,
+                (SELECT count(*) FROM practice_hints h JOIN practice_submissions sub ON sub.id=h.submission_id WHERE sub.session_id=s.id) AS hints_used
+                FROM students s JOIN practice_exercises x ON x.version=s.bank_version AND x.id=s.selected_exercise
+                LEFT JOIN LATERAL (
+                    SELECT count(*) FILTER (WHERE completed) AS completed,
+                    jsonb_agg(jsonb_build_object('exercise_id',exercise_id,'outcome',outcome)) AS progress
+                    FROM practice_progress WHERE session_id=s.id
+                ) p ON true
+                LEFT JOIN LATERAL (
+                    SELECT id,input,result,created_at FROM practice_submissions
+                    WHERE session_id=s.id AND exercise_id=s.selected_exercise AND kind='check' AND result IS NOT NULL
+                    ORDER BY created_at DESC,id DESC LIMIT 1
+                ) a ON true ORDER BY s.created_at DESC""").fetchall()
             results=[];now=datetime.now(timezone.utc)
             for s in rows:
-                if db.execute("SELECT 1 FROM practice_submissions WHERE session_id=%s AND result IS NULL AND created_at<clock_timestamp()-interval '90 seconds'",(s['id'],)).fetchone():
-                    db.execute('SELECT id FROM practice_sessions WHERE id=%s FOR UPDATE',(s['id'],))
-                    self.expire_actions(db,s)
-                eid=s['selected_exercise'];definition=db.execute('SELECT definition FROM practice_exercises WHERE version=%s AND id=%s',(s['bank_version'],eid)).fetchone()['definition']
-                progress=db.execute('SELECT exercise_id,outcome,hint_level,completed FROM practice_progress WHERE session_id=%s',(s['id'],)).fetchall()
-                latest=db.execute("SELECT id,input,result,created_at FROM practice_submissions WHERE session_id=%s AND exercise_id=%s AND kind='check' AND result IS NOT NULL ORDER BY created_at DESC,id DESC LIMIT 1",(s['id'],eid)).fetchone()
+                eid=s['selected_exercise'];definition=s['definition'];progress=s['progress']
+                latest={'id':s['action_id'],'input':s['latest_input'],'result':s['latest_result'],'created_at':s['latest_at']} if s['action_id'] else None
                 diagnosis=None;clarify=False
                 if latest:
                     result=latest['result'];finding=result.get('misconception');text=latest['input'].get('work','')
@@ -85,7 +104,7 @@ class ClassroomStore:
                     'current_exercise':eid,'exercise_title':definition['title'],'topic':definition['topic'],
                     'last_activity':s['last_activity'].isoformat() if s['last_activity'] else None,
                     'last_signal':s['any_signal'].isoformat() if s['any_signal'] else None,'presence':presence_label(age,bool(signal)),
-                    'completed':s['completed'],'hints_used':db.execute('SELECT count(*) AS n FROM practice_hints h JOIN practice_submissions a ON a.id=h.submission_id WHERE a.session_id=%s',(s['id'],)).fetchone()['n'],
+                    'completed':s['completed'],'hints_used':s['hints_used'],
                     'diagnosis':diagnosis,'clarification_needed':clarify,
                     'group_key':definition['topic']+':'+CONCEPTS.get(base,base)+':'+str(diagnosis.get('criterion','supported')) if diagnosis else 'clarification' if clarify else None,
                     'parent_outcome':ps.get(base,{}).get('outcome'),'follow_up_outcome':ps.get(base+'-follow',{}).get('outcome')})
