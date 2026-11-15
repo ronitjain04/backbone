@@ -47,18 +47,20 @@ def validate_answer(data, course):
         raise ValueError('Live answer must include the selected course, conversation support and sources')
 
 
-def smoke(base):
+def smoke(base, *, request=None, opener=None):
+    request=request or request_json
+    opener=opener or urlopen
     base = base.rstrip('/')
-    with urlopen(Request(base, headers={'User-Agent': 'Backbone-GitHub-Actions'}), timeout=30) as response:
+    with opener(Request(base, headers={'User-Agent': 'Backbone-GitHub-Actions'}), timeout=30) as response:
         if response.status != 200 or b'Backbone' not in response.read():
             raise RuntimeError('The public homepage did not load')
-    wait_ready(base)
+    wait_ready(base,request=request,attempts=3)
     for course, query in [('cs2110', 'Why can the LC-3 global bus only hold one value?'),
                           ('cs2200', 'Why do data hazards happen in a pipeline?')]:
-        result = request_json(base + '/api/chat', {'course': course, 'query': query, 'history': []})
+        result = request(base + '/api/chat', {'course': course, 'query': query, 'history': []})
         validate_answer(result, course)
         if course == 'cs2200':
-            follow = request_json(base + '/api/chat', {'course': course, 'query': 'Can you give a short example?',
+            follow = request(base + '/api/chat', {'course': course, 'query': 'Can you give a short example?',
                 'history': [{'role':'user', 'content':query}, {'role':'assistant', 'content':result['answer'][:4000]}]})
             validate_answer(follow, course)
         print(course + ': live answer and sources verified')

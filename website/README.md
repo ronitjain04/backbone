@@ -141,24 +141,34 @@ Deploy from `website/`: `.python-version`, `pyproject.toml` and `vercel.json` co
 
 Keep `MODEL_API_KEY` and `BACKEND_TOKEN` as production **Secret** values in Vercel. Configure `MODEL_PROVIDER`, `MODEL_BASE_URL`, `MODEL_NAME` and `RETRIEVAL_MODE` there as well. The public gateway uses the existing token internally; no Cloudflare configuration is required. Do not put these secrets in browser files. Secret environment values cannot be downloaded through `vercel env pull`; it returns placeholders for them.
 
-## Automated tests and deployment
+## Automated checks and deployment
 
-[GitHub Actions](https://github.com/ronitjain04/backbone/actions/workflows/ci-deploy.yml) runs the frontend suite/build and Python backend/deployment suite on pushes and pull requests. Successful `main` runs deploy production, as do manual runs on `main` and the daily **09:17 UTC** schedule. GitHub may delay scheduled runs. Pull requests and other branches never deploy.
+PRs and pushes to `main` run quality/workflow/dependency checks, backend and real PostgreSQL integration tests, a populated old-schema upgrade, frontend/static/Sites compatibility tests, and real Chromium student/teacher/replay/mobile smoke tests. Browser fixtures use synthetic data outside the Vercel project root; no private corpus, model credential or production database is available to PR jobs. Failed browser traces/screenshots are retained for three days.
 
-Configure these repository Actions settings:
+Local checks:
 
-| Setting | Type | Purpose |
-| --- | --- | --- |
-| `VERCEL_ORG_ID` | Variable | Vercel account/team owning `backbone-api` |
-| `VERCEL_PROJECT_ID` | Variable | Existing combined website/API project ID |
-| `VERCEL_TOKEN` | Secret | Project-scoped deployment access |
-| `BACKEND_URL` | Variable | `https://backbone-api.vercel.app` |
+```sh
+website/.venv/bin/ruff check .
+npm --prefix website/site run lint
+website/.venv/bin/python -m pytest website/backend/tests scripts/tests -q
+npm --prefix website/site test
+npm --prefix website/site run build
+# With TEST_DATABASE_URL set to an isolated local PostgreSQL database:
+website/.venv/bin/python -m playwright install --only-shell chromium
+website/.venv/bin/python -m pytest tests/browser --browser chromium -q
+website/.venv/bin/pip-audit -r website/backend/requirements.txt
+npm --prefix website/site audit --omit=dev --audit-level=high
+```
 
-The workflow fails before deploying if any setting is absent. The pinned Vercel CLI uploads the checked-out API and tested frontend artifact together, waits for deployment completion, and assigns the production `backbone-study.vercel.app` alias. `BACKBONE_COMMIT` records the tested SHA in the function environment; `/health` must match that SHA and `/ready` must include both courses before the public website smoke tests run. Keep Vercel's independent Git auto-deployment disconnected so GitHub's test gate controls releases.
+Only successful **main push** runs can release. Manual verification does not deploy. Configure Actions variables `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` and the project-scoped `VERCEL_TOKEN` secret. `BACKEND_URL` is no longer a release setting. Keep Vercel's independent Git auto-deployment disconnected.
 
-Public smoke checks request real answers for both courses plus a contextual follow-up, requiring sources and conversation support. This uses three answers and one query rewrite per deployment and does not print private source excerpts. The inference budget is per function process, not a global limit across Vercel instances; provider quotas still constrain use. Model/provider outages fail verification even if deployment succeeded. Rerun from **Actions → Test and deploy Backbone → Run workflow → main** after fixing an outage. There is no automatic rollback.
+The release job downloads the tested static artifact and creates a production-configured candidate using `--skip-domain`. It verifies the tested revision, both course configurations, source-grounded deterministic checking, draft/completion persistence, duplicate submissions, replay and teacher authorization using a fresh disposable CI student. That student is deleted after the check. It then rechecks remote main and promotes the verified candidate. Failed or stale candidates never reach promotion. Authenticated `vercel curl` handles protected deployments without weakening protection or placing credentials in URLs.
 
-Production hosting and automated releases use Vercel only. The old Cloudflare Pages project is no longer required, and GitHub Actions does not need Cloudflare credentials. Use Vercel deployment rollback to restore an earlier combined release. The previous Render service is outside the active deployment workflow.
+Promotion is serialized. A final public-alias failure reports the previous deployment and code recovery command; no destructive database rollback is automatic. **An unpromoted candidate can still apply additive database migrations through application startup.** Staging is a code/domain boundary, not database isolation; migrations must remain compatible with the preceding app. CI tests populated upgrades, but this cannot prove every future migration safe.
+
+The separate [live monitor](../.github/workflows/monitor.yml) runs daily at 09:17 UTC or manually, probes both courses and a contextual follow-up, and never deploys. Provider/service/network failures use bounded retries; Retry-After beyond the wait budget is reported without an early retry. Invalid answer/source contracts fail verification distinctly. These optional real-provider probes are separate from deterministic PR/release gates and do not expose source excerpts in logs. GitHub may delay schedules.
+
+Weekly grouped Dependabot PRs cover Actions, production Python and npm dependencies. Updates are reviewed and tested, never auto-merged. Production dependency audits do not certify the separate historical application folders. The original Sites publication remains active: `npm run build:sites` and its gateway compatibility tests are retained. Public production releases use Vercel.
 
 ## Guided practice demo
 

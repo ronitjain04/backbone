@@ -1,0 +1,26 @@
+name: Monitor live Backbone
+on:
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: backbone-live-monitor
+  cancel-in-progress: true
+jobs:
+  live:
+    name: Read-only live configuration and provider probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      SITE_URL: https://backbone-study.vercel.app
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Probe both courses and a contextual follow-up with bounded retries
+        run: python -m scripts.monitor

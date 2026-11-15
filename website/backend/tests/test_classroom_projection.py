@@ -40,3 +40,15 @@ def test_historical_bank_version_and_expired_outcome_remain_visible(store):
  row=store.classroom()[0]
  assert row['display_name']=='Historical' and row['parent_outcome']=='solved_independently'
  assert row['hints_used']==0 and row['current_exercise']=='mem-03'
+
+def test_concurrent_teacher_reads_settle_expired_sessions_once_in_lock_order(store):
+ from concurrent.futures import ThreadPoolExecutor
+ tokens=[store.create_student('Concurrent '+str(i)) for i in range(2)]
+ for t in tokens:
+  store.begin_action(t,'num-01','hint','abandoned-help',{'answer':'','work':''})
+  a=store.begin_action(t,'num-01','check','finished-work',{'answer':'45','work':''})
+  store.finish_action(t,a['id'],{'status':'correct'})
+ with store.connect() as db:db.execute("UPDATE practice_submissions SET created_at=now()-interval '2 minutes' WHERE kind='hint'")
+ with ThreadPoolExecutor(max_workers=2) as pool:views=list(pool.map(lambda _:store.classroom(),range(2)))
+ assert all(len(v)==2 and all(s['parent_outcome']=='solved_independently' for s in v) for v in views)
+ assert all(sum(e['kind']=='outcome_recorded' for e in store.events(t))==1 for t in tokens)
