@@ -21,7 +21,7 @@ class FixtureModel:
         data=json.loads(content);text=data['work'] or data['final_answer']
         return json.dumps({'criteria':[{'id':r['id'],'status':'met','evidence':text,'source_ids':[1]} for r in data['rubric']], 'message':'The synthetic reasoning check is consistent.','misconceptions':[]})
 
-def create_fixture_app(dsn):
+def create_fixture_app(dsn,*,public_dir=None):
     if 'practice_test_' not in conninfo_to_dict(dsn).get('options',''):
         raise RuntimeError('Browser fixtures require an isolated synthetic test schema.')
     store=Store(dsn);store.migrate();bank=load_bank()
@@ -29,4 +29,4 @@ def create_fixture_app(dsn):
         for e in (parent,parent['follow_up']):e['references']=[{'source':CHUNK['source'],'details':CHUNK['details'],'fingerprint':fingerprint(CHUNK)}]
     store.seed(bank)
     backend=create_app(retrievers={'cs2110':FixtureRetriever(),'cs2200':FixtureRetriever()},model=FixtureModel(),service_token='synthetic-service')
-    return create_site(backend,token='synthetic-service',practice_store=store)
+    return create_site(backend,token='synthetic-service',practice_store=store,public_dir=public_dir)
