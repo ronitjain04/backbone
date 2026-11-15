@@ -114,7 +114,9 @@ def project_metadata(monkeypatch, data):
  monkeypatch.setenv('VERCEL_TOKEN','synthetic-secret')
  calls=[]
  def open_metadata(request, **kwargs):
-  calls.append((request,kwargs));return BytesIO(json.dumps(data).encode())
+  calls.append((request,kwargs))
+  response=BytesIO(json.dumps(data).encode());response.status=202
+  return response
  monkeypatch.setattr(module,'urlopen',open_metadata,raising=False)
  return module,calls
 
@@ -173,21 +175,51 @@ def test_cli_uses_existing_project_environment_without_explicit_team_discovery(m
 
 def test_promotion_uses_verified_deployment_id_instead_of_hostname(monkeypatch):
  from contextlib import contextmanager
- from scripts import release as module
- calls=[]
+ module,calls=project_metadata(monkeypatch,{'id':'prj_synthetic','targets':{'production':{'id':'dpl_candidate'}}})
  @contextmanager
  def candidate(url):yield Transport()
  ops=module.VercelOps()
  monkeypatch.setattr(ops,'candidate',candidate)
  monkeypatch.setattr(module,'verify_assets',lambda transport:None)
- monkeypatch.setattr(module,'run_cli',lambda args,**kw:calls.append(args))
+ monkeypatch.setattr(module,'run_cli',lambda *a,**kw:pytest.fail('No CLI promotion discovery'))
  url='https://backbone-candidate.vercel.app'
  ops.verify_candidate(url,SHA)
  ops.promote(url)
- assert calls[0][1:3]==['promote','dpl_candidate']
+ request,kwargs=calls[0]
+ assert request.full_url=='https://api.vercel.com/v10/projects/prj_synthetic/promote/dpl_candidate?teamId=team_synthetic'
+ assert request.get_method()=='POST' and request.data==b'{}'
+ assert request.get_header('Authorization')=='Bearer synthetic-secret'
 
 
 def test_promotion_rejects_an_unverified_url(monkeypatch):
  from scripts import release as module
  monkeypatch.setattr(module,'run_cli',lambda *a,**kw:pytest.fail('Unverified promotion'))
  with pytest.raises(ReleaseError):module.VercelOps().promote('https://backbone-candidate.vercel.app')
+
+
+def test_api_promotion_failure_is_controlled_and_does_not_leak_response(monkeypatch):
+ from urllib.error import HTTPError
+ module,_=project_metadata(monkeypatch,{})
+ ops=module.VercelOps();ops.verified_candidates['https://backbone-candidate.vercel.app']='dpl_candidate'
+ def denied(*a,**kw):raise HTTPError('private-url',403,'synthetic-secret',{},None)
+ monkeypatch.setattr(module,'urlopen',denied)
+ with pytest.raises(ReleaseError) as error:ops.promote('https://backbone-candidate.vercel.app')
+ assert '403' in str(error.value) and 'secret' not in str(error.value) and 'private' not in str(error.value)
+
+
+def test_public_verification_waits_for_async_promotion_but_stays_bounded(monkeypatch):
+ from scripts import release as module
+ calls=[];delays=[]
+ monkeypatch.setattr(module,'PublicTransport',lambda url:object())
+ monkeypatch.setattr(module.time,'sleep',delays.append)
+ def eventually(transport,commit):
+  calls.append(commit)
+  if len(calls)<3:raise ReleaseError('old revision')
+ monkeypatch.setattr(module,'verify_target',eventually)
+ module.VercelOps().verify_alias('https://backbone-study.vercel.app',SHA)
+ assert len(calls)==3 and delays==[3,3]
+ calls.clear();delays.clear()
+ def never(*args):calls.append(1);raise ReleaseError('old revision')
+ monkeypatch.setattr(module,'verify_target',never)
+ with pytest.raises(ReleaseError):module.VercelOps().verify_alias('https://backbone-study.vercel.app',SHA)
+ assert len(calls)==20 and len(delays)==19

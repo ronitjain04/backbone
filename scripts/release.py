@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import time
 from urllib.error import HTTPError
 from urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
 from urllib.parse import urlencode, quote
@@ -209,8 +210,30 @@ class VercelOps:
     def promote(self,url):
         identifier=self.verified_candidates.get(url)
         if not identifier:raise ReleaseError('Cannot promote a candidate without completed verification')
-        run_cli(vercel_args('promote',identifier,'--yes','--timeout','3m','--cwd','website'))
-    def verify_alias(self,url,commit):verify_target(PublicTransport(url),commit)
+        project=os.environ.get('VERCEL_PROJECT_ID','')
+        team=os.environ.get('VERCEL_ORG_ID','')
+        token=os.environ.get('VERCEL_TOKEN','')
+        if not project or not team or not token:
+            raise ReleaseError('Missing configured Vercel project, team, or credential')
+        endpoint='https://api.vercel.com/v10/projects/'+quote(project,safe='')+'/promote/'+identifier+'?'+urlencode({'teamId':team})
+        request=Request(endpoint,data=b'{}',headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'})
+        try:
+            with urlopen(request,timeout=30) as response:
+                if not 200<=response.status<300:raise ReleaseError('Vercel project promotion was not accepted')
+        except HTTPError as error:
+            raise ReleaseError('Vercel project promotion failed (HTTP '+str(error.code)+'); inspect deployment permissions') from None
+        except OSError:
+            raise ReleaseError('Vercel project promotion request failed; inspect project state before retrying') from None
+    def verify_alias(self,url,commit):
+        # The project API can accept promotion asynchronously (HTTP 202).
+        for attempt in range(20):
+            try:
+                verify_target(PublicTransport(url),commit)
+                return
+            except ReleaseError:
+                if attempt==19:raise
+                time.sleep(3)
+
 
 
 def write_summary(text):
