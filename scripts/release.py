@@ -9,7 +9,8 @@ import re
 import subprocess
 import tempfile
 from urllib.error import HTTPError
-from urllib.request import build_opener, HTTPCookieProcessor, Request
+from urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
+from urllib.parse import urlencode, quote
 from uuid import uuid4
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -163,15 +164,26 @@ class PublicTransport:
 
 class VercelOps:
     def previous(self,site):
-        # A broken application must not prevent shipping its replacement.
-        raw=run_cli(vercel_args('inspect',validated_url(site),'--json','--cwd','website'))
+        # Read the configured project's live target, never its newest staged build.
+        # Application health and hostname-based CLI discovery are not prerequisites.
+        validated_url(site)
+        project=os.environ.get('VERCEL_PROJECT_ID','')
+        team=os.environ.get('VERCEL_ORG_ID','')
+        token=os.environ.get('VERCEL_TOKEN','')
+        if not project or not team or not token:
+            raise ReleaseError('Missing configured Vercel project, team, or credential')
+        url='https://api.vercel.com/v9/projects/'+quote(project,safe='')+'?'+urlencode({'teamId':team})
         try:
-            identifier=json.loads(raw).get('id','')
-            if not isinstance(identifier,str) or not re.fullmatch('dpl_[A-Za-z0-9]+',identifier):
+            with urlopen(Request(url,headers={'Authorization':'Bearer '+token}),timeout=30) as response:
+                data=json.load(response)
+            identifier=data.get('targets',{}).get('production',{}).get('id','')
+            if data.get('id')!=project or not isinstance(identifier,str) or not re.fullmatch('dpl_[A-Za-z0-9]+',identifier):
                 raise ReleaseError('Cannot identify the previous deployment for code recovery')
             return identifier
-        except (ValueError,AttributeError,TypeError):
-            raise ReleaseError('Deployment metadata was invalid; no promotion attempted') from None
+        except HTTPError as error:
+            raise ReleaseError('Vercel project metadata request failed (HTTP '+str(error.code)+'); no promotion attempted') from None
+        except (OSError,ValueError,AttributeError,TypeError):
+            raise ReleaseError('Vercel project metadata unavailable or invalid; no promotion attempted') from None
     def current_main(self):
         output=run_cli(['git','ls-remote','origin','refs/heads/main'])
         return output.split()[0] if output.split() else ''
