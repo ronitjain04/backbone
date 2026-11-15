@@ -169,3 +169,25 @@ def test_cli_uses_existing_project_environment_without_explicit_team_discovery(m
  assert '--scope' not in calls[0]
  assert module.vercel_args('deploy','--prod')==['vercel','deploy','--prod']
  assert module.vercel_args('promote','dpl_previous')==['vercel','promote','dpl_previous']
+
+
+def test_promotion_uses_verified_deployment_id_instead_of_hostname(monkeypatch):
+ from contextlib import contextmanager
+ from scripts import release as module
+ calls=[]
+ @contextmanager
+ def candidate(url):yield Transport()
+ ops=module.VercelOps()
+ monkeypatch.setattr(ops,'candidate',candidate)
+ monkeypatch.setattr(module,'verify_assets',lambda transport:None)
+ monkeypatch.setattr(module,'run_cli',lambda args,**kw:calls.append(args))
+ url='https://backbone-candidate.vercel.app'
+ ops.verify_candidate(url,SHA)
+ ops.promote(url)
+ assert calls[0][1:3]==['promote','dpl_candidate']
+
+
+def test_promotion_rejects_an_unverified_url(monkeypatch):
+ from scripts import release as module
+ monkeypatch.setattr(module,'run_cli',lambda *a,**kw:pytest.fail('Unverified promotion'))
+ with pytest.raises(ReleaseError):module.VercelOps().promote('https://backbone-candidate.vercel.app')
