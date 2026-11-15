@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 from .inference import InferenceClient
+from .retry import sanitized_retry_after
 from .retrieval import Retriever
 from .corpus import load_blob_corpus
 from .conversation import ChatMessage, MAX_HISTORY_MESSAGES, validate_history
@@ -92,6 +93,8 @@ def create_app(retriever=None, model=None, service_token=None, rate_limit=10, al
         except asyncio.CancelledError: raise
         except Exception as exc:
             import httpx
+            if isinstance(exc,httpx.HTTPStatusError) and exc.response.status_code==429:
+                raise HTTPException(429,'The answer provider is temporarily rate-limited. Please retry later.',headers={'Retry-After':sanitized_retry_after(exc.response.headers.get('Retry-After'))}) from None
             if isinstance(exc,(httpx.TimeoutException,TimeoutError)): raise HTTPException(504,'The model took too long. Please try again.') from None
             logger.error('Retrieval or model request failed (%s)',type(exc).__name__)
             raise HTTPException(502,'The answer service is unavailable. Please try again shortly.') from None

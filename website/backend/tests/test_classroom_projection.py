@@ -52,3 +52,29 @@ def test_concurrent_teacher_reads_settle_expired_sessions_once_in_lock_order(sto
  with ThreadPoolExecutor(max_workers=2) as pool:views=list(pool.map(lambda _:store.classroom(),range(2)))
  assert all(len(v)==2 and all(s['parent_outcome']=='solved_independently' for s in v) for v in views)
  assert all(sum(e['kind']=='outcome_recorded' for e in store.events(t))==1 for t in tokens)
+
+def test_deleted_session_between_expiry_discovery_and_lock_does_not_break_poll(store):
+ t=store.create_student('Deleting student');store.begin_action(t,'num-01','hint','abandoned-delete',{'answer':'','work':''})
+ with store.connect() as db:db.execute("UPDATE practice_submissions SET created_at=now()-interval '2 minutes'")
+ original=store.connect
+ from contextlib import contextmanager
+ class Interleaved:
+  def __init__(self,db):self.db=db
+  def execute(self,query,*args,**kw):
+   cursor=self.db.execute(query,*args,**kw)
+   if 'SELECT DISTINCT session_id' in query:
+    # Delete after discovery has materialized its rows but before the row lock.
+    rows=cursor.fetchall()
+    store.connect=original
+    try:store.delete(t)
+    finally:store.connect=interleaved
+    class Result:
+     def fetchall(self):return rows
+    return Result()
+   return cursor
+ @contextmanager
+ def interleaved():
+  with original() as db:yield Interleaved(db)
+ store.connect=interleaved
+ try:assert store.classroom()==[]
+ finally:store.connect=original

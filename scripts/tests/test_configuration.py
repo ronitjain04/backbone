@@ -29,3 +29,11 @@ def test_fixture_server_is_outside_vercel_root_and_excluded_from_production():
  assert not fixture.is_relative_to(ROOT/'website')
  config=json.loads((ROOT/'website/vercel.json').read_text())
  assert 'backend/tests/**' in config['functions']['backend/site.py']['excludeFiles']
+
+def test_main_concurrency_still_serializes_with_premaintenance_releases():
+ import re
+ workflow=(ROOT/'.github/workflows/ci-deploy.yml').read_text()
+ group=re.search(r'^  group: (.+)$',workflow,re.M).group(1)
+ resolved=group.replace('${{ github.event.pull_request.number || github.ref }}','refs/heads/main')
+ assert resolved=='backbone-refs/heads/main'
+ assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in workflow

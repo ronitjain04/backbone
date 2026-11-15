@@ -105,3 +105,12 @@ def test_candidate_assets_require_real_html_and_nonempty_javascript():
  a=Assets();verify_assets(a)
  a.broken=True
  with pytest.raises(ReleaseError):verify_assets(a)
+
+def test_previous_deployment_uses_control_plane_even_when_app_is_broken(monkeypatch):
+ from scripts import release as module
+ calls=[]
+ def cli(args,**kw):calls.append(args);return json.dumps({'id':'dpl_previous'})
+ monkeypatch.setattr(module,'run_cli',cli)
+ monkeypatch.setattr(module,'PublicTransport',lambda *a:pytest.fail('Old app health must not be required'))
+ assert module.VercelOps().previous('https://backbone-study.vercel.app')=='dpl_previous'
+ assert calls[0][1]=='inspect'

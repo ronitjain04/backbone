@@ -142,7 +142,16 @@ class PublicTransport:
 
 
 class VercelOps:
-    def previous(self,site):return checked(PublicTransport(site),'/health').get('instance','')
+    def previous(self,site):
+        # A broken application must not prevent shipping its replacement.
+        raw=run_cli(['vercel','inspect',validated_url(site),'--json','--cwd','website'])
+        try:
+            identifier=json.loads(raw).get('id','')
+            if not isinstance(identifier,str) or not re.fullmatch('dpl_[A-Za-z0-9]+',identifier):
+                raise ReleaseError('Cannot identify the previous deployment for code recovery')
+            return identifier
+        except (ValueError,AttributeError,TypeError):
+            raise ReleaseError('Deployment metadata was invalid; no promotion attempted') from None
     def current_main(self):
         output=run_cli(['git','ls-remote','origin','refs/heads/main'])
         return output.split()[0] if output.split() else ''

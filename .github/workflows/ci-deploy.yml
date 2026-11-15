@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: backbone-verify-${{ github.event.pull_request.number || github.ref }}
+  group: backbone-${{ github.event.pull_request.number || github.ref }}
   # PR checks can be superseded; never cancel a workflow that may be promoting main.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 

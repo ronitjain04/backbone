@@ -64,7 +64,7 @@ class ClassroomStore:
                 ORDER BY session_id""").fetchall()
             for item in expired:
                 session=db.execute('SELECT id FROM practice_sessions WHERE id=%s FOR UPDATE',(item['session_id'],)).fetchone()
-                self.expire_actions(db,session)
+                if session is not None:self.expire_actions(db,session)
             rows=db.execute("""WITH students AS (
                 SELECT s.id,s.bank_version,s.selected_exercise,s.created_at,st.display_name
                 FROM practice_sessions s JOIN practice_students st ON st.id=s.student_id
