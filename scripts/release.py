@@ -102,9 +102,29 @@ def release(commit,site_url,ops):
     return {'commit':commit,'candidate':candidate,'previous':previous,'promoted':True}
 
 
+def vercel_args(*arguments):
+    args=['vercel',*arguments]
+    if os.getenv('VERCEL_ORG_ID'):args+=['--scope',os.environ['VERCEL_ORG_ID']]
+    return args
+
+
 def run_cli(args,*,cwd=ROOT):
+    operations={('vercel','inspect'):'vercel inspect',('vercel','deploy'):'vercel deploy',
+                ('vercel','curl'):'vercel curl',('vercel','promote'):'vercel promote',('git','ls-remote'):'git ls-remote'}
+    operation=operations.get(tuple(args[:2]),'release command')
     try:return subprocess.run(args,cwd=cwd,check=True,capture_output=True,text=True,timeout=600).stdout
-    except (OSError,subprocess.SubprocessError):raise ReleaseError('Release command failed; inspect the protected deployment logs') from None
+    except subprocess.CalledProcessError as error:
+        # Classify known failure categories without logging raw stderr, arguments,
+        # tokens, response bodies or project identifiers.
+        diagnostic=((error.stderr or '')+' '+(error.stdout or '')).lower()
+        if any(x in diagnostic for x in ('invalid token','token expired','token is invalid','authentication')):reason='authentication failure'
+        elif any(x in diagnostic for x in ('not authorized','forbidden','not permitted','permission')):reason='authorization failure'
+        elif any(x in diagnostic for x in ('not found','could not find','cannot find')):reason='resource or project not found'
+        elif 'option' in diagnostic and ('unknown' in diagnostic or 'unexpected' in diagnostic):reason='unsupported CLI option'
+        else:reason='CLI rejected the operation'
+        raise ReleaseError(operation+' failed ('+reason+'); inspect protected deployment configuration') from None
+    except (OSError,subprocess.SubprocessError):
+        raise ReleaseError(operation+' could not complete; inspect protected deployment configuration') from None
 
 
 def parse_reply(raw,marker='\nBACKBONE_HTTP:'):
@@ -119,7 +139,7 @@ def parse_reply(raw,marker='\nBACKBONE_HTTP:'):
 class CandidateTransport:
     def __init__(self,base,jar):self.base=validated_url(base);self.jar=jar
     def request(self,path,data=None):
-        args=['vercel','curl',path,'--deployment',self.base,'--','--silent','--show-error','--max-time','80',
+        args=vercel_args('curl',path,'--deployment',self.base)+['--','--silent','--show-error','--max-time','80',
               '--write-out','\nBACKBONE_HTTP:%{http_code}','--cookie',self.jar,'--cookie-jar',self.jar,'--header','Origin: '+self.base]
         if data is not None:args+=['--request','POST','--header','Content-Type: application/json','--data',json.dumps(data)]
         return parse_reply(run_cli(args,cwd=ROOT/'website'))
@@ -144,7 +164,7 @@ class PublicTransport:
 class VercelOps:
     def previous(self,site):
         # A broken application must not prevent shipping its replacement.
-        raw=run_cli(['vercel','inspect',validated_url(site),'--json','--cwd','website'])
+        raw=run_cli(vercel_args('inspect',validated_url(site),'--json','--cwd','website'))
         try:
             identifier=json.loads(raw).get('id','')
             if not isinstance(identifier,str) or not re.fullmatch('dpl_[A-Za-z0-9]+',identifier):
@@ -156,7 +176,7 @@ class VercelOps:
         output=run_cli(['git','ls-remote','origin','refs/heads/main'])
         return output.split()[0] if output.split() else ''
     def deploy(self,commit):
-        url=candidate_url(run_cli(['vercel','deploy','--prod','--skip-domain','--yes','--cwd','website','--env','BACKBONE_COMMIT='+commit]))
+        url=candidate_url(run_cli(vercel_args('deploy','--prod','--skip-domain','--yes','--cwd','website','--env','BACKBONE_COMMIT='+commit)))
         write_summary('Candidate created, not promoted: '+url+' · tested commit `'+commit+'`.')
         return url
     @contextmanager
@@ -168,7 +188,7 @@ class VercelOps:
         with self.candidate(url) as transport:
             verify_assets(transport)
             verify_target(transport,commit,practice=True)
-    def promote(self,url):run_cli(['vercel','promote',url,'--yes','--timeout','3m','--cwd','website'])
+    def promote(self,url):run_cli(vercel_args('promote',url,'--yes','--timeout','3m','--cwd','website'))
     def verify_alias(self,url,commit):verify_target(PublicTransport(url),commit)
 
 

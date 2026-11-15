@@ -114,3 +114,30 @@ def test_previous_deployment_uses_control_plane_even_when_app_is_broken(monkeypa
  monkeypatch.setattr(module,'PublicTransport',lambda *a:pytest.fail('Old app health must not be required'))
  assert module.VercelOps().previous('https://backbone-study.vercel.app')=='dpl_previous'
  assert calls[0][1]=='inspect'
+
+
+def test_metadata_inspection_explicitly_uses_configured_team_scope(monkeypatch):
+ from scripts import release as module
+ monkeypatch.setenv('VERCEL_ORG_ID','team_synthetic')
+ calls=[]
+ monkeypatch.setattr(module,'run_cli',lambda args,**kw:(calls.append(args) or json.dumps({'id':'dpl_previous'})))
+ assert module.VercelOps().previous('https://backbone-study.vercel.app')=='dpl_previous'
+ assert calls[0][-2:]==['--scope','team_synthetic']
+
+
+def test_cli_failure_reports_operation_and_safe_category_without_raw_details(monkeypatch):
+ import subprocess
+ from scripts import release as module
+ def run(*a,**kw):raise subprocess.CalledProcessError(1,['secret-token'],output='',stderr='Error: not authorized for secret-project using secret-token')
+ monkeypatch.setattr(module.subprocess,'run',run)
+ with pytest.raises(ReleaseError) as err:module.run_cli(['vercel','inspect','https://backbone-study.vercel.app'])
+ assert 'vercel inspect' in str(err.value) and 'authorization' in str(err.value)
+ assert 'secret' not in str(err.value)
+
+
+def test_candidate_curl_scope_is_not_forwarded_as_a_curl_argument(monkeypatch):
+ from scripts import release as module
+ monkeypatch.setenv('VERCEL_ORG_ID','team_synthetic');calls=[]
+ monkeypatch.setattr(module,'run_cli',lambda args,**kw:(calls.append(args) or '{}\nBACKBONE_HTTP:200'))
+ module.CandidateTransport('https://backbone-candidate.vercel.app','synthetic-cookie-path').request('/health')
+ assert calls[0].index('--scope')<calls[0].index('--')
