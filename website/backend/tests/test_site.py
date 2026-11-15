@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from website.backend.app import create_app
 from website.backend.site import create_site
@@ -49,14 +50,14 @@ def test_missing_runtime_assets_returns_404_after_cdn_extraction(tmp_path):
         assert c.get('/api/status').json()=={'ready':True}
 
 
-def test_public_gateway_preserves_safe_provider_retry_timing_for_monitor():
+@pytest.mark.parametrize("provider_status",[429,503])
+def test_public_gateway_preserves_safe_provider_retry_timing_for_monitor(provider_status):
     import httpx
-    import pytest
     from urllib.error import HTTPError
     from scripts.monitor import request_with_retry,MonitorError
     class Throttled:
         async def answer(self,*args,**kw):
-            response=httpx.Response(429,headers={'Retry-After':'3600','X-Private':'secret-provider-detail'},request=httpx.Request('POST','https://provider.test/secret'))
+            response=httpx.Response(provider_status,headers={'Retry-After':'3600','X-Private':'secret-provider-detail'},request=httpx.Request('POST','https://provider.test/secret'))
             raise httpx.HTTPStatusError('secret-provider-detail',request=response.request,response=response)
     backend=create_app(retriever=Retriever(),model=Throttled(),service_token='synthetic-secret')
     with TestClient(create_site(backend,token='synthetic-secret')) as c:

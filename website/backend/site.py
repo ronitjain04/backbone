@@ -89,7 +89,8 @@ def create_site(backend=None, *, token=None, public_dir=None, practice_store=Non
         result = await upstream('POST', '/api/chat', content=bytes(body))
         if result.status_code == 422:
             return JSONResponse({'detail': 'Enter a valid question, course and conversation context.'}, status_code=400)
-        headers={'Retry-After':sanitized_retry_after(result.headers.get('Retry-After'))} if result.status_code==429 else {}
+        delay=result.headers.get('Retry-After')
+        headers={'Retry-After':sanitized_retry_after(delay)} if result.status_code in (429,503) and delay is not None else {}
         return JSONResponse(result.json(), status_code=result.status_code,headers=headers)
 
     app.include_router(create_router(practice_store,resources=lambda:getattr(backend.state,'resources',{})))

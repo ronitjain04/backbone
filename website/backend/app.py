@@ -93,8 +93,12 @@ def create_app(retriever=None, model=None, service_token=None, rate_limit=10, al
         except asyncio.CancelledError: raise
         except Exception as exc:
             import httpx
-            if isinstance(exc,httpx.HTTPStatusError) and exc.response.status_code==429:
-                raise HTTPException(429,'The answer provider is temporarily rate-limited. Please retry later.',headers={'Retry-After':sanitized_retry_after(exc.response.headers.get('Retry-After'))}) from None
+            if isinstance(exc,httpx.HTTPStatusError) and exc.response.status_code in (429,503):
+                status=exc.response.status_code
+                delay=exc.response.headers.get('Retry-After')
+                headers={'Retry-After':sanitized_retry_after(delay)} if delay is not None or status==429 else {}
+                message='The answer provider is temporarily rate-limited. Please retry later.' if status==429 else 'The answer provider is temporarily unavailable. Please retry later.'
+                raise HTTPException(status,message,headers=headers) from None
             if isinstance(exc,(httpx.TimeoutException,TimeoutError)): raise HTTPException(504,'The model took too long. Please try again.') from None
             logger.error('Retrieval or model request failed (%s)',type(exc).__name__)
             raise HTTPException(502,'The answer service is unavailable. Please try again shortly.') from None

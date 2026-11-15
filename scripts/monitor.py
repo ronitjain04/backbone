@@ -24,7 +24,7 @@ def request_with_retry(url,data=None,*,request=deploy.request_json,sleep=time.sl
             if error.code not in (429,502,503,504):raise MonitorError('Live service returned an unexpected HTTP status') from None
             delay=retry_delay(error.headers.get('Retry-After'))
             if delay is not None and delay>max_wait:
-                raise MonitorError('Live service quota/rate limit exceeds the monitor wait budget; no early retry was made') from None
+                raise MonitorError('Live service retry/quota window exceeds the monitor wait budget; no early retry was made') from None
             if attempt+1==attempts:raise MonitorError('Live service unavailable or rate-limited after bounded retries (HTTP '+str(error.code)+'); inspect provider/runtime status') from None
             sleep(delay if delay is not None else min(5*(attempt+1),max_wait))
         except OSError:
