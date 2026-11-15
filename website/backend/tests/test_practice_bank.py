@@ -1,5 +1,3 @@
-import json
-from pathlib import Path
 from website.backend.practice.bank import load_bank, public_exercise, verify_sources
 
 

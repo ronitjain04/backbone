@@ -1,0 +1,4 @@
+target-version = "py312"
+include = ["website/backend/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
+[lint]
+select = ["E9", "F"]

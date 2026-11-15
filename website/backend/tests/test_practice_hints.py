@@ -1,5 +1,5 @@
 from website.backend.practice.bank import load_bank, fingerprint
-from website.backend.practice.hints import make_hint, grounded_chunks
+from website.backend.practice.hints import make_hint
 
 class Retriever:
     def __init__(self,chunks):self.chunks=chunks;self.queries=[]

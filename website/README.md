@@ -12,37 +12,27 @@ The website has CS 2110 and CS 2200 tabs with separate local chat histories and 
 
 The CS 2200 starter collection contains six **original demo notes**, not Georgia Tech slides or textbook excerpts. Production private course data is not included. The default demo uses lightweight lexical retrieval; optional `RETRIEVAL_MODE=semantic` uses normalized sentence embeddings and a FAISS inner-product index. The previous sibling app's API contract and grounding approach are preserved; this deployment uses explicit JSONL documents rather than runtime pickle loading.
 
-## Local preview
+## Local development (Vercel/FastAPI)
 
-Node.js 24 is the tested website build/preview baseline. From the repository root:
+Use Node.js 24 and Python 3.12. From the repository root:
 
 ```sh
+python3.12 -m venv website/.venv
+website/.venv/bin/pip install -r website/backend/requirements.txt -r website/backend/requirements-dev.txt
 npm --prefix website/site ci
-node website/site/dev.mjs
+export PYTHON="$PWD/website/.venv/bin/python"
+npm --prefix website/site run dev
 ```
 
-Open http://127.0.0.1:4173. The introduction and chat are available immediately; without backend configuration, sending a question displays an honest service-not-connected message and preserves the question.
+Open http://127.0.0.1:4173. The launcher builds static assets and starts the same combined FastAPI gateway as Vercel, including practice and teacher routes. `PORT` changes the port; `PYTHON` selects the virtual environment. Missing Python/dependencies produce setup guidance. No separate chat-only Node proxy or `BACKEND_URL` is needed for this local workflow.
 
-## Start a live backend
+Set the values from `backend/.env.example` in your shell or hosting secret manager. `.env` examples are **not automatically loaded**. Keep model/service credentials server-side. Configure `DATABASE_URL` and run `python -m website.backend.tools.migrate_practice` for saved practice. Without database/model configuration the page remains available and the affected API reports unavailable, rather than inventing a result.
 
-Python 3.11 is the tested baseline. Create an environment and install:
+`MODEL_PROVIDER=compatible` uses a chat-completions-compatible API; `MODEL_BASE_URL` includes its version prefix. `MODEL_PROVIDER=ollama` uses native `/api/generate`. Set the actual model/provider credential; no inference key is provisioned here. The original demo corpus is `website/backend/data/demo.jsonl`; set `CORPUS_PATH` or course-specific private corpus paths as described below. `RETRIEVAL_MODE=lexical` is the lightweight default.
 
-```sh
-python3 -m venv website/.venv
-website/.venv/bin/pip install -r website/backend/requirements.txt
-```
+`/health` reports process/revision liveness; `/ready` and `/api/status?course=...` check loaded course/model configuration, not provider quota. Saved practice has its own database dependency. Chat history remains browser-owned and bounded per course; saved practice and replay live in PostgreSQL.
 
-Set the values from `backend/.env.example` in your shell or hosting secret manager. `.env` files are examples only and are **not automatically loaded**. Never place keys in browser files or command-line arguments. `MODEL_PROVIDER=compatible` uses a chat-completions-compatible HTTP API; `MODEL_BASE_URL` includes its version prefix. `MODEL_PROVIDER=ollama` uses the native `/api/generate` endpoint and the origin as its base URL. Set the provider's real model name and credential. No external inference key is created by this project.
-
-```sh
-export CORPUS_PATH=website/backend/data/demo.jsonl
-export RETRIEVAL_MODE=lexical
-website/.venv/bin/uvicorn website.backend.app:app --host 127.0.0.1 --port 8000
-```
-
-For the website preview, set `BACKEND_URL=http://127.0.0.1:8000` and the same `BACKEND_TOKEN` as the API, then restart `node website/site/dev.mjs`. `/health` checks process liveness; `/ready` returns 503 until the corpus and model settings load and a backend token is configured. Ten chat attempts per minute per backend process limit inference traffic. Use one worker for this process-wide budget; multi-instance deployments need a shared limit. No conversation history is stored server-side. The browser sends bounded recent context for the selected course with each request; refreshing or clearing that course’s chat resets its context.
-
-## Host the backend
+## Standalone backend / retained hosting compatibility
 
 The Docker build context is the repository root:
 
@@ -129,7 +119,7 @@ The course picker alone does not install course data on the server.
 
 ## Publish the website
 
-`site/.openai/hosting.json` stores the exact Sites identity. `node website/site/build.mjs` generates a self-contained Worker at `site/dist/server/index.js`. Package and publish using the Sites source workflow; browser libraries and math fonts are bundled locally; the deployed Worker has no Node.js runtime dependency. Publish only `website/site`, not this whole repository. New Sites are private by default; wider tester access must be configured with supported Sites controls.
+`site/.openai/hosting.json` stores the exact Sites identity. `npm --prefix website/site run build:sites` generates a self-contained Worker at `site/dist/server/index.js`. Package and publish using the Sites source workflow; browser libraries and math fonts are bundled locally; the deployed Worker has no Node.js runtime dependency. Publish only `website/site`, not this whole repository. New Sites are private by default; wider tester access must be configured with supported Sites controls.
 
 ## Verify
 
@@ -137,7 +127,7 @@ The course picker alone does not install course data on the server.
 website/.venv/bin/pip install pytest
 website/.venv/bin/python -m pytest website/backend/tests -q
 node --test website/site/tests/*.test.mjs
-node website/site/build.mjs
+npm --prefix website/site run build:sites
 node --check website/site/dist/server/index.js
 ```
 

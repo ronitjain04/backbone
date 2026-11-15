@@ -1,4 +1,3 @@
-import json
 from fastapi.testclient import TestClient
 from website.backend.app import create_app
 from website.backend.site import create_site

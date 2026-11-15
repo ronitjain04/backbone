@@ -1,7 +1,6 @@
 """PostgreSQL persistence; every mutation owns the session lock and its events."""
 import hashlib
 import secrets
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from uuid import uuid4, UUID
 import psycopg
