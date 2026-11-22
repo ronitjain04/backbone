@@ -11,7 +11,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "dompurify": "3.4.17",
+    "dompurify": "3.4.18",
     "highlight.js": "11.12.0",
     "katex": "0.19.1",
     "markdown-it": "15.0.3",
@@ -22,7 +22,7 @@
     "esbuild": "0.28.2",
     "eslint": "10.15.0",
     "globals": "17.14.0",
-    "jsdom": "31.0.0"
+    "jsdom": "31.0.1"
   },
   "engines": {
     "node": ">=24"
